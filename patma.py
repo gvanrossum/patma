@@ -1,5 +1,13 @@
 import collections.abc as cabc
+import dataclasses
 from typing import *
+
+__all__ = ['Pattern',
+           'ConstantPattern', 'AlternativesPattern', 'LiteralPattern',
+           'VariablePattern', 'AnnotatedPattern', 'SequencePattern',
+           'InstancePattern',
+          ]
+
 
 class Pattern:
     """A pattern to be matched.
@@ -60,23 +68,6 @@ class ConstantPattern(Pattern):
     """
 
 
-class AlternativesPattern(ConstantPattern):
-    """A pattern consisting of several alternatives.
-
-    This is a sequence of constant patterns separated by bars (``|``).
-    """
-
-    def __init__(self, patterns: List[ConstantPattern]):
-        self.patterns = patterns
-
-    def match(self, x: object) -> Optional[Dict[str, object]]:
-        for p in self.patterns:
-            match = p.match(x)
-            if match is not None:
-                return match
-        return None
-
-
 def _type_matches(x: object, c: object) -> bool:
     return issubclass(x.__class__, c.__class__)
 
@@ -96,6 +87,23 @@ class LiteralPattern(ConstantPattern):
     def match(self, x: object) -> Optional[Dict[str, object]]:
         if _type_matches(x, self.constant) and x == self.constant:
             return {}
+        return None
+
+
+class AlternativesPattern(ConstantPattern):
+    """A pattern consisting of several alternatives.
+
+    This is a sequence of constant patterns separated by bars (``|``).
+    """
+
+    def __init__(self, patterns: List[ConstantPattern]):
+        self.patterns = patterns
+
+    def match(self, x: object) -> Optional[Dict[str, object]]:
+        for p in self.patterns:
+            match = p.match(x)
+            if match is not None:
+                return match
         return None
 
 
@@ -172,23 +180,41 @@ class InstancePattern(Pattern):
     """
 
     def __init__(self, cls: Type, posargs: List[Pattern], kwargs: Mapping[str, Pattern]):
-        self.cls = Type
+        self.cls = cls
         self.posargs = posargs
         self.kwargs = kwargs
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
         if not isinstance(x, self.cls):
             return None
-        # TODO: How to extract positional instance variables?  (Ask @dataclass.)
-        assert not self.posargs
+
+        try:
+            fields = dataclasses.fields(x)
+        except RuntimeError:
+            fields = []
+
+        if len(self.posargs) > len(fields):
+            return None  # Can't match: more positional patterns than fields.
+
         missing = object()
         matches = {}
-        for name, pattern in self.kwargs.items():
-            value = getattr(x, name, missing)
+
+        for field, pattern in zip(fields, self.posargs):
+            value = getattr(x, field.name, missing)
             if value is missing:
-                return None  # Can't match.
+                return None  # Can't match: attribute not set.
             match = pattern.match(value)
             if match is None:
                 return None
             matches.update(match)
+
+        for name, pattern in self.kwargs.items():
+            value = getattr(x, name, missing)
+            if value is missing:
+                return None  # Can't match: attribute not set.
+            match = pattern.match(value)
+            if match is None:
+                return None
+            matches.update(match)
+
         return matches
