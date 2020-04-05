@@ -152,7 +152,9 @@ class AnnotatedPattern(Pattern):
 class SequencePattern(Pattern):
     """A pattern for a (fixed) sequence of subpatterns.
 
-    This is similar to list or tuple unpacking.
+    This is similar to list or tuple unpacking, but it doesn't match
+    strings (neither str nor bytes, but it does match bytestring and
+    memoryview).
     """
 
     def __init__(self, patterns: List[Pattern]):

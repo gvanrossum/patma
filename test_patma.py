@@ -1,5 +1,7 @@
-from patma import *
+import array
 import dataclasses
+
+from patma import *
 
 
 @dataclasses.dataclass
@@ -50,6 +52,10 @@ def test_sequence_pattern():
     assert pat.match((1, 2, 3, 4)) is None
     assert pat.match(123) is None
     assert pat.match('abc') is None
+    assert pat.match(b'abc') is None
+    assert pat.match(array.array('b', b'abc')) is None
+    ## assert pat.match(memoryview(b'abc')) is None
+    ## assert pat.match(bytearray(b'abc')) is None
 
 
 def test_instance_pattern():
