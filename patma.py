@@ -2,11 +2,16 @@ import collections.abc as cabc
 import dataclasses
 from typing import *
 
-__all__ = ['Pattern',
-           'ConstantPattern', 'AlternativesPattern', 'LiteralPattern',
-           'VariablePattern', 'AnnotatedPattern', 'SequencePattern',
-           'InstancePattern',
-          ]
+__all__ = [
+    "Pattern",
+    "ConstantPattern",
+    "AlternativesPattern",
+    "LiteralPattern",
+    "VariablePattern",
+    "AnnotatedPattern",
+    "SequencePattern",
+    "InstancePattern",
+]
 
 
 class Pattern:
@@ -161,9 +166,11 @@ class SequencePattern(Pattern):
         self.patterns = patterns
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if (isinstance(x, cabc.Sequence)
+        if (
+            isinstance(x, cabc.Sequence)
             and not isinstance(x, (str, bytes))
-            and len(x) == len(self.patterns)):
+            and len(x) == len(self.patterns)
+        ):
             matches = {}
             for pattern, item in zip(self.patterns, x):
                 match = pattern.match(item)
@@ -183,7 +190,9 @@ class InstancePattern(Pattern):
     TODO: Same problem for the class name as AnnotatedPattern.
     """
 
-    def __init__(self, cls: Type, posargs: List[Pattern], kwargs: Mapping[str, Pattern]):
+    def __init__(
+        self, cls: Type, posargs: List[Pattern], kwargs: Mapping[str, Pattern]
+    ):
         self.cls = cls
         self.posargs = posargs
         self.kwargs = kwargs
