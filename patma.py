@@ -159,10 +159,12 @@ class SequencePattern(Pattern):
         self.patterns = patterns
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if isinstance(x, cabc.Sequence) and len(x) == len(self.patterns):
+        if (isinstance(x, cabc.Sequence)
+            and not isinstance(x, (str, bytes))
+            and len(x) == len(self.patterns)):
             matches = {}
             for pattern, item in zip(self.patterns, x):
-                match = patterns.match(item)
+                match = pattern.match(item)
                 if match is None:
                     return None
                 matches.update(match)
