@@ -65,3 +65,12 @@ def test_instance_pattern():
     pat = InstancePattern(MyClass, [vxx], {"y": hello})
     match = pat.match(MyClass(42, "hello"))
     assert match == {"xx": 42}
+
+
+def test_walrus_pattern():
+    # case x := (p, q):
+    pat = WalrusPattern("x", SequencePattern([VariablePattern(s) for s in "pq"]))
+    assert pat.match((1, 2)) == {"p": 1, "q": 2, "x": (1, 2)}
+    assert pat.match([1, 2]) == {"p": 1, "q": 2, "x": [1, 2]}
+    assert pat.match(12) is None
+    assert pat.match((1, 2, 3)) is None

@@ -11,6 +11,7 @@ __all__ = [
     "AnnotatedPattern",
     "SequencePattern",
     "InstancePattern",
+    "WalrusPattern",
 ]
 
 
@@ -231,3 +232,22 @@ class InstancePattern(Pattern):
             matches.update(match)
 
         return matches
+
+
+class WalrusPattern(Pattern):
+    """A pattern using a walrus operator.
+
+    For example, ``a := (p, q)``.  This matches a pair, whose elements
+    are extracted into ``p`` and ``q``, while the entire pair is
+    extracted into ``a``.
+    """
+
+    def __init__(self, name: str, pattern: Pattern):
+        self.name = name
+        self.pattern = pattern
+
+    def match(self, x: object) -> Optional[Dict[str, object]]:
+        match = self.pattern.match(x)
+        if match is not None:
+            match[self.name] = x
+        return match
