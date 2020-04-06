@@ -23,3 +23,40 @@ cases, e.g. to capture the sub-tuple here:
 ```
     case [a, b := [x, y], c]: ...
 ```
+
+## Grammar ideas
+
+Using a simple addition to pegen we could just use the syntax shown
+above.  The toplevel grammar would be:
+
+```
+...
+compound_statement:
+    | if_stmt
+    ...
+    | match_stmt
+match_stmt: "match" expression ':' ~ NEWLINE INDENT case_block+ DEDENT
+case_block: "case" pattern ['if' named_expression] ':' ~ block
+pattern:
+    # TBD
+```
+
+The addition to pegen would be that a keyword in double quotes (like
+`"match"` and `"case"` above) is only a keyword in context -- the
+tokenizer does not recognize it as a reserved word.  (In the early
+days of pegen this was how all keywords were handled, but strict
+compatibility with the old Python parser required that we made all
+keywords "reserved words" regardless of context.)
+
+This works because of the colon in the syntax.  There are valid
+expressions that can be combined with a preceding identifier to form
+another valid expression.  For example, if we take the valid
+expression `[x]` and prepend the identifier `match`, we get the valid
+expression `match[x]`.  But no current Python statement can start with
+`match[x]:`.
+
+With the grammar given above, given a line starting with `match x+1:`,
+the parser would first attempt to parse it as an expression, fail to
+parse at the `+` operator, then backtrack and attempt to parse the
+same input as a match statement.  And a line comprising of `match [x]
+<NEWLINE>` will be parsed as an expression statement.
