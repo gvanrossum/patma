@@ -35,8 +35,8 @@ compound_statement:
     | if_stmt
     ...
     | match_stmt
-match_stmt: "match" expression ':' ~ NEWLINE INDENT case_block+ DEDENT
-case_block: "case" pattern ['if' named_expression] ':' ~ block
+match_stmt: "match" expression ':' NEWLINE INDENT case_block+ DEDENT
+case_block: "case" pattern ['if' named_expression] ':' block
 pattern:
     # TBD
 ```
@@ -60,3 +60,13 @@ the parser would first attempt to parse it as an expression, fail to
 parse at the `+` operator, then backtrack and attempt to parse the
 same input as a match statement.  And a line comprising of `match [x]
 <NEWLINE>` will be parsed as an expression statement.
+
+Note that the `"case"` keyword is not strictly necessary.  We could
+just as well define `case_block` as follows:
+
+```
+case_block: pattern ['if' named_expression] ':' block
+```
+
+But I believe, with Kohn, that adding a keyword makes the code more
+readable (to those not versed in functional languages, anyways).
