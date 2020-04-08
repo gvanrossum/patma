@@ -15,8 +15,16 @@ def test_literal_pattern():
     pat = LiteralPattern(42)
     assert pat.match(42) == {}
     assert pat.match(0) is None
+    assert pat.match(42.0) is None
     assert pat.match("42") is None
 
+def test_literal_float_pattern():
+    # case 42.0:
+    pat = LiteralPattern(42.0)
+    assert pat.match(42.0) == {}
+    assert pat.match(42) == {}
+    assert pat.match(0.0) is None
+    assert pat.match(0) is None
 
 def test_alternatives_pattern():
     # case 1|2|3:
@@ -42,6 +50,17 @@ def test_annotated_pattern():
     pat = AnnotatedPattern(VariablePattern("x"), int)
     assert pat.match(42) == {"x": 42}
     assert pat.match("hello") is None
+
+def test_int_matches_float():
+    # case (x: float):  # Should match int
+    pat = AnnotatedPattern(VariablePattern("x"), float)
+    assert pat.match(42) == {"x": 42}
+    assert type(pat.match(42)["x"]) == int
+
+def test_float_doesnt_match_int():
+    # case (x: int):  # Shouldn't match 1.0
+    pat = AnnotatedPattern(VariablePattern("x"), int)
+    assert pat.match(1.0) is None
 
 
 def test_sequence_pattern():

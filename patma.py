@@ -74,8 +74,8 @@ class ConstantPattern(Pattern):
     """
 
 
-def _type_matches(x: object, c: object) -> bool:
-    return issubclass(x.__class__, c.__class__)
+def _is_instance(x: object, t: type) -> bool:
+    return isinstance(x, t) or (t is float and isinstance(x, int))
 
 
 class LiteralPattern(ConstantPattern):
@@ -91,7 +91,7 @@ class LiteralPattern(ConstantPattern):
         self.constant = constant
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if _type_matches(x, self.constant) and x == self.constant:
+        if _is_instance(x, type(self.constant)) and x == self.constant:
             return {}
         return None
 
@@ -150,7 +150,7 @@ class AnnotatedPattern(Pattern):
         self.cls = cls
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if isinstance(x, self.cls):
+        if _is_instance(x, self.cls):
             return self.pattern.match(x)
         return None
 
@@ -199,7 +199,7 @@ class InstancePattern(Pattern):
         self.kwargs = kwargs
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if not isinstance(x, self.cls):
+        if not _is_instance(x, self.cls):
             return None
 
         try:
