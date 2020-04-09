@@ -70,3 +70,7 @@ case_block: pattern ['if' named_expression] ':' block
 
 But I believe, with Kohn, that adding a keyword makes the code more
 readable (to those not versed in functional languages, anyways).
+
+### Examples
+
+See [EXAMPLES file](EXAMPLES.md)
