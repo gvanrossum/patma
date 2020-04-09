@@ -5,8 +5,8 @@ Since I don't have a parser yet, converted examples may contain bugs.
 ## Case 1: [Constant matches](https://github.com/python/cpython/blob/ce81a925/Lib/plistlib.py#L319-L351)
 
 Original:
-```
 
+```
 def convert_field(self, value, conversion):
     # do any conversion on the resulting object
     if conversion is None:
@@ -21,6 +21,7 @@ def convert_field(self, value, conversion):
 ```
 
 Converted:
+
 ```
 def convert_field(self, value, conversion):
     # do any conversion on the resulting object
@@ -40,8 +41,8 @@ def convert_field(self, value, conversion):
 ## Case 2: [Mixed constant and type matches](https://github.com/python/cpython/blob/ce81a925/Lib/plistlib.py#L319-L351)
 
 Original:
-```
 
+```
 def write_value(self, value):
     if isinstance(value, str):
         self.simple_element("string", value)
@@ -78,8 +79,8 @@ def write_value(self, value):
 ```
 
 Converted:
-```
 
+```
 def write_value(self, value):
     match value:
         case str():
@@ -119,8 +120,8 @@ def write_value(self, value):
 ## Case 3: [Iterable value matches with extraction](https://github.com/python/cpython/blob/815280e/Lib/_pydecimal.py#L6280-L6301)
 
 Original:
-```
 
+```
 def _group_lengths(grouping):
     """Convert a localeconv-style grouping into a (possibly infinite)
     iterable of integers representing group lengths.
@@ -145,8 +146,8 @@ def _group_lengths(grouping):
 ```
 
 Converted:
-```
 
+```
 def _group_lengths(grouping):
     """Convert a localeconv-style grouping into a (possibly infinite)
     iterable of integers representing group lengths.
@@ -175,8 +176,8 @@ def _group_lengths(grouping):
 ## Case 4: [Mixed simple type and deep matches](https://github.com/python/cpython/blob/bace59d/Lib/ast.py#L78-L101)
 
 Original:
-```
 
+```
 def _convert(node):
     if isinstance(node, Constant):
         return node.value
@@ -204,8 +205,8 @@ def _convert(node):
 ```
 
 Converted:
-```
 
+```
 def _convert(node):
     match node:
         case Constant(value=value):
@@ -238,8 +239,8 @@ def _convert(node):
 ## Case 5: [Deep type, iterable, and value matches with extraction](https://github.com/python/mypy/blob/9076fb0/mypyc/ir/rtypes.py#L490-L500)
 
 Original:
-```
 
+```
 def optional_value_type(rtype: RType) -> Optional[RType]:
     """If rtype is the union of none_rprimitive and another type X, return X.
     Otherwise return None.
@@ -253,8 +254,8 @@ def optional_value_type(rtype: RType) -> Optional[RType]:
 ```
 
 Converted:
-```
 
+```
 def optional_value_type(rtype: RType) -> Optional[RType]:
     """If rtype is the union of none_rprimitive and another type X, return X.
     Otherwise return None.
@@ -271,8 +272,8 @@ def optional_value_type(rtype: RType) -> Optional[RType]:
 ## Case 6: [A very deep iterable and type match with extraction](https://github.com/gvanrossum/pegen/blob/54d84ad/pegen/grammar.py#L118-L128)
 
 Original:
-```
 
+```
 def flatten(self) -> Rhs:
     # If it's a single parenthesized group, flatten it.
     rhs = self.rhs
@@ -284,7 +285,7 @@ def flatten(self) -> Rhs:
     ):
         rhs = rhs.alts[0].items[0].item.rhs
     return rhs
- ```
+```
 
 Converted (note that I had to name the classes `Alt` and `NamedItem`,
 which are anonymous in the original):
