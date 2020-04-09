@@ -1,6 +1,6 @@
 import collections.abc as cabc
 import dataclasses
-from typing import *
+from typing import Dict, List, Optional, Type, Mapping
 
 __all__ = [
     "Pattern",
@@ -205,7 +205,7 @@ class InstancePattern(Pattern):
         try:
             fields = dataclasses.fields(x)
         except RuntimeError:
-            fields = []
+            fields = ()
 
         if len(self.posargs) > len(fields):
             return None  # Can't match: more positional patterns than fields.
