@@ -7,3 +7,6 @@ mypy:
 
 test:
 	pytest
+
+black:
+	black *.py

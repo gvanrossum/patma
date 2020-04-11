@@ -4,9 +4,8 @@ from typing import Dict, List, Optional, Type, Mapping
 
 __all__ = [
     "Pattern",
-    "ConstantPattern",
     "AlternativesPattern",
-    "LiteralPattern",
+    "ConstantPattern",
     "VariablePattern",
     "AnnotatedPattern",
     "SequencePattern",
@@ -67,24 +66,14 @@ class Pattern:
         return None
 
 
-class ConstantPattern(Pattern):
-    """A pattern that matches one or more constant values.
-
-    Constant patterns can only contain other constant patterns.
-    """
-
-
 def _is_instance(x: object, t: type) -> bool:
     return isinstance(x, t) or (t is float and isinstance(x, int))
 
 
-class LiteralPattern(ConstantPattern):
-    """A literal pattern.
+class ConstantPattern(Pattern):
+    """A pattern that matches a given value.
 
-    This is a numeric or string literal.
-
-    There's special code to ensure that 1 matches 1.0, but 1.0 doesn't
-    match 1.
+    The matched value's type must be a subtype of the constant's type.
     """
 
     def __init__(self, constant: object):
@@ -96,13 +85,13 @@ class LiteralPattern(ConstantPattern):
         return None
 
 
-class AlternativesPattern(ConstantPattern):
+class AlternativesPattern(Pattern):
     """A pattern consisting of several alternatives.
 
-    This is a sequence of constant patterns separated by bars (``|``).
+    This is a sequence of patterns separated by bars (``|``).
     """
 
-    def __init__(self, patterns: List[ConstantPattern]):
+    def __init__(self, patterns: List[Pattern]):
         self.patterns = patterns
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
@@ -111,13 +100,6 @@ class AlternativesPattern(ConstantPattern):
             if match is not None:
                 return match
         return None
-
-
-# TODO: Should there be constant/literal patterns for lists and tuples?
-# E.g.
-#
-#     match x:
-#         case (1, 2) | (3, 4): return "yup"
 
 
 class VariablePattern(Pattern):
