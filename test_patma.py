@@ -99,6 +99,17 @@ def test_sequence_pattern():
     ## assert pat.match(bytearray(b'abc')) is None
 
 
+def test_mapping_pattern():
+    # case {"x": x, "y": "z": z}:
+    pat = MappingPattern({"x": VariablePattern("x"),
+                          "y": ConstantPattern("y"),
+                          "z": VariablePattern("z")})
+    assert pat.match({"x": "x", "y": "y", "z": "z"}) == {"x": "x", "z": "z"}
+    assert pat.match({"x": "x", "y": "y", "z": "z", "a": "a"}) == {"x": "x", "z": "z"}
+    assert pat.match({"x": "x", "y": "yy", "z": "z", "a": "a"}) is None
+    assert pat.match({"x": "x", "y": "y"}) is None
+
+
 def test_instance_pattern():
     # case MyClass(xx: int, y='hello'):
     vxx = AnnotatedPattern(VariablePattern("xx"), int)

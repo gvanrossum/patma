@@ -9,6 +9,7 @@ __all__ = [
     "VariablePattern",
     "AnnotatedPattern",
     "SequencePattern",
+    "MappingPattern",
     "InstancePattern",
     "WalrusPattern",
 ]
@@ -162,6 +163,32 @@ class SequencePattern(Pattern):
                 matches.update(match)
             return matches
         return None
+
+
+class MappingPattern(Pattern):
+    """A pattern for a mapping.
+
+    This uses constants for keys but patterns for values.
+    Extra key/value pairs are ignored.
+    """
+
+    def __init__(self, patterns: Mapping[object, Pattern]):
+        self.patterns = patterns
+
+    def match(self, x: object) -> Optional[Dict[str, object]]:
+        if not _is_instance(x, Mapping):
+            return None
+        matches = {}
+        for key, pattern in self.patterns.items():
+            try:
+                value = x[key]
+            except KeyError:
+                return None
+            match = pattern.match(value)
+            if match is None:
+                return None
+            matches.update(match)
+        return matches
 
 
 class InstancePattern(Pattern):
