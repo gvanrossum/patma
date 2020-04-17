@@ -1,5 +1,6 @@
 import collections.abc as cabc
 import dataclasses
+import sys
 from typing import Dict, List, Optional, Type, Mapping
 
 __all__ = [
@@ -64,10 +65,25 @@ class Pattern:
     """
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        return None
+        raise NotImplementedError
+
+    def translate(self, target: str) -> str:
+        """target is a string representing a variable.
+
+        The argument can be e.g. 'foo' or 'foo.bar' or 'foo.bar[0]'.
+
+        Returns an expression that checks whether the target matches
+        the pattern, e.g.  for ConstantPattern(42), it could return
+        '(foo == 42)'.
+        """
+        raise NotImplementedError
 
 
 def _is_instance(x: object, t: type) -> bool:
+    """Like instance() but pretend int subclasses float.
+
+    TODO: Also pretend float subclasses complex.
+    """
     return isinstance(x, t) or (t is float and isinstance(x, int))
 
 
@@ -84,6 +100,10 @@ class ConstantPattern(Pattern):
         if _is_instance(x, type(self.constant)) and x == self.constant:
             return {}
         return None
+
+    def translate(self, target: str) -> str:
+        # TODO: numeric tower
+        return f"({target} == {self.constant!r})"
 
 
 class AlternativesPattern(Pattern):
@@ -102,6 +122,9 @@ class AlternativesPattern(Pattern):
                 return match
         return None
 
+    def translate(self, target: str) -> str:
+        return f"({' or '.join(p.translate(target) for p in self.patterns)})"
+
 
 class VariablePattern(Pattern):
     """A value extraction pattern.
@@ -115,6 +138,17 @@ class VariablePattern(Pattern):
 
     def match(self, x: object) -> Dict[str, object]:
         return {self.name: x}
+
+    def translate(self, target: str) -> str:
+        return f"({self.name} := {target},)"
+
+
+def _full_class_name(cls: type) -> str:
+    # TODO: import shenanigans to make this actually work
+    if cls.__module__ == "builtins":
+        return cls.__qualname__
+    else:
+        return f"{cls.__module__}.{cls.__qualname__}"
 
 
 class AnnotatedPattern(Pattern):
@@ -136,6 +170,10 @@ class AnnotatedPattern(Pattern):
         if _is_instance(x, self.cls):
             return self.pattern.match(x)
         return None
+
+    def translate(self, target: str) -> str:
+        # TODO: numeric tower
+        return f"(isinstance({target}, {_full_class_name(self.cls)}) and {self.pattern.translate(target)})"
 
 
 class SequencePattern(Pattern):
@@ -164,6 +202,11 @@ class SequencePattern(Pattern):
             return matches
         return None
 
+    def translate(self, target: str) -> str:
+        # TODO: arrange to import Sequence; exclude str/bytes
+        per_item = (p.translate(f"{target}[{i}]") for i, p in enumerate(self.patterns))
+        return f"(isinstance({target}, Sequence) and {' and '.join(per_item)})"
+
 
 class MappingPattern(Pattern):
     """A pattern for a mapping.
@@ -189,6 +232,22 @@ class MappingPattern(Pattern):
                 return None
             matches.update(match)
         return matches
+
+    def translate(self, target: str) -> str:
+        # TODO: arrange to import Mapping
+        per_item = (pat.translate(f"{target}[{key!r}]") for key, pat in self.patterns.items())
+        return f"(isinstance({target}, Mapping) and {' and '.join(per_item)})"
+
+
+def _get_stack_depth() -> int:
+    """Hack used to generate unique names depending on nesting."""
+    i = 0
+    while True:
+        try:
+            sys._getframe(i)
+        except ValueError:
+            return i
+        i += 1
 
 
 class InstancePattern(Pattern):
@@ -242,6 +301,15 @@ class InstancePattern(Pattern):
 
         return matches
 
+    def translate(self, target: str) -> str:
+        depth = _get_stack_depth()
+        tmpvar = f"_t{depth}"
+        if self.posargs and not self.kwargs:
+            a = f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target}).values())"
+            b = (p.translate(f"{tmpvar}[{i}]") for i, p in enumerate(self.posargs))
+            return f"(({' and '.join(b)}) if {a} is not None else False)"
+        # TODO: support no args and kwargs
+
 
 class WalrusPattern(Pattern):
     """A pattern using a walrus operator.
@@ -260,3 +328,6 @@ class WalrusPattern(Pattern):
         if match is not None:
             match[self.name] = x
         return match
+
+    def translate(self, target: str) -> str:
+        return f"(({self.name} := {target},) if {self.pattern.translate(target)} else False)"
