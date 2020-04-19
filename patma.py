@@ -102,7 +102,11 @@ class ConstantPattern(Pattern):
         return None
 
     def translate(self, target: str) -> str:
-        # TODO: numeric tower
+        if isinstance(self.constant, int):
+            return f"({target} == {self.constant!r} and isinstance({target}, int))"
+        if isinstance(self.constant, float):
+            return f"({target} == {self.constant!r} and isinstance({target}, (int, float)))"
+        # TODO: complex
         return f"({target} == {self.constant!r})"
 
 
@@ -205,7 +209,7 @@ class SequencePattern(Pattern):
     def translate(self, target: str) -> str:
         # TODO: arrange to import Sequence; exclude str/bytes
         per_item = (p.translate(f"{target}[{i}]") for i, p in enumerate(self.patterns))
-        return f"(isinstance({target}, Sequence) and {' and '.join(per_item)})"
+        return f"(isinstance({target}, Sequence) and len({target}) == {len(self.patterns)} and {' and '.join(per_item)})"
 
 
 class MappingPattern(Pattern):
@@ -235,7 +239,8 @@ class MappingPattern(Pattern):
 
     def translate(self, target: str) -> str:
         # TODO: arrange to import Mapping
-        per_item = (pat.translate(f"{target}[{key!r}]") for key, pat in self.patterns.items())
+        per_item = (f"({key!r} in {target} and " + pat.translate(f"{target}[{key!r}]") + ")"
+                    for key, pat in self.patterns.items())
         return f"(isinstance({target}, Mapping) and {' and '.join(per_item)})"
 
 
