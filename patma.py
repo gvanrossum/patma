@@ -309,11 +309,23 @@ class InstancePattern(Pattern):
     def translate(self, target: str) -> str:
         depth = _get_stack_depth()
         tmpvar = f"_t{depth}"
-        if self.posargs and not self.kwargs:
-            a = f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target}).values())"
-            b = (p.translate(f"{tmpvar}[{i}]") for i, p in enumerate(self.posargs))
-            return f"(({' and '.join(b)}) if {a} is not None else False)"
-        # TODO: support no args and kwargs
+        listvar = f"_l{depth}"
+        conditions = [f"(({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None)"]
+        npos = len(self.posargs)
+        nkw = len(self.kwargs)
+        n = max(npos, nkw)
+        if npos > 0:
+            conditions.append(f"(len({listvar} := list({tmpvar}.values())) >= {n})")
+        elif n > 0:
+            conditions.append(f"(len({tmpvar}) >= {n})")
+        if npos > 0:
+            for i in range(npos):
+                conditions.append(self.posargs[i].translate(f"{listvar}[{i}]"))
+        for kw, pat in self.kwargs.items():
+            cond = pat.translate(f"{tmpvar}[{kw!r}]")
+            conditions.append(f"({cond} if {kw!r} in {tmpvar} else False)")
+        joined = " and ".join(conditions)
+        return f"({joined})"
 
 
 class WalrusPattern(Pattern):

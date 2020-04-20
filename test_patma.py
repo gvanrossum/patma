@@ -1,6 +1,7 @@
 import array
 import collections.abc
 import dataclasses
+import sys
 
 from patma import *
 
@@ -13,7 +14,9 @@ def checks(pat, x):
     match = pat.match(x)
     ns = {"_target": x,
           "Sequence": collections.abc.Sequence,
-          "Mapping": collections.abc.Mapping}
+          "Mapping": collections.abc.Mapping,
+          __name__: sys.modules[__name__],
+          }
     res = eval(pat.translate("_target"), ns)
     if "__builtins__" in ns:
         del ns["__builtins__"]  # We don't need this for the comparison
@@ -32,6 +35,12 @@ def checks(pat, x):
 class MyClass:
     x: int
     y: str
+
+    @staticmethod
+    def __match__(target):
+        if not isinstance(target, MyClass):
+            return None
+        return {"x": target.x, "y": target.y}
 
 
 def test_constant_pattern():
@@ -98,8 +107,8 @@ def test_annotated_pattern():
 def test_int_matches_float():
     # case (x: float):  # Should match int
     pat = AnnotatedPattern(VariablePattern("x"), float)
-    assert pat.match(42) == {"x": 42}  # TODO: translate
-    assert type(pat.match(42)["x"]) == int  # TODO: translate
+    assert pat.match(42) == {"x": 42}  # TODO: translate should assume int <: float
+    assert type(pat.match(42)["x"]) == int  # TODO: translate ditto
 
 
 def test_float_doesnt_match_int():
@@ -116,9 +125,9 @@ def test_sequence_pattern():
     assert checks(pat, (1, 2, 3, 4)) is None
     assert checks(pat, 123) is None
     # Check that character/byte strings don't match sequences
-    assert pat.match("abc") is None  # TODO: translate
-    assert pat.match(b"abc") is None  # TODO: translate
-    assert pat.match(array.array("b", b"abc")) is None  # TODO: translate
+    assert pat.match("abc") is None  # TODO: translate should disallow strings
+    assert pat.match(b"abc") is None  # TODO: translate ditto
+    assert pat.match(array.array("b", b"abc")) is None  # TODO: translate ditto
     ## assert checks(pat, memoryview(b'abc')) is None
     ## assert checks(pat, bytearray(b'abc')) is None
 
@@ -139,7 +148,7 @@ def test_instance_pattern():
     vxx = AnnotatedPattern(VariablePattern("xx"), int)
     hello = ConstantPattern("hello")
     pat = InstancePattern(MyClass, [vxx], {"y": hello})
-    assert pat.match(MyClass(42, "hello")) == {"xx": 42}  # TODO: translate
+    assert checks(pat, MyClass(42, "hello")) == {"xx": 42}
 
 
 def test_walrus_pattern():
