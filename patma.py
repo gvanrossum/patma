@@ -312,7 +312,6 @@ class InstancePattern(Pattern):
         fields = f"_f{depth}"
         item = f"_i{depth}"
         conditions = []
-        conditions.append(f"getattr({_full_class_name(self.cls)}, '__match__', None) is not None")
         conditions.append(f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None")
         npos = len(self.posargs)
         if npos > 0:
