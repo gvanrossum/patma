@@ -309,21 +309,29 @@ class InstancePattern(Pattern):
     def translate(self, target: str) -> str:
         depth = _get_stack_depth()
         tmpvar = f"_t{depth}"
-        listvar = f"_l{depth}"
-        conditions = [f"(({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None)"]
+        fields = f"_f{depth}"
+        item = f"_i{depth}"
+        conditions = []
+        conditions.append(f"getattr({_full_class_name(self.cls)}, '__match__', None) is not None")
+        conditions.append(f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None")
         npos = len(self.posargs)
-        nkw = len(self.kwargs)
-        n = max(npos, nkw)
         if npos > 0:
-            conditions.append(f"(len({listvar} := list({tmpvar}.values())) >= {n})")
-        elif n > 0:
-            conditions.append(f"(len({tmpvar}) >= {n})")
-        if npos > 0:
+            conditions.append(f"({fields} := getattr({tmpvar}, '__pos_match_fields__', None)) is not None")
+            conditions.append(f"isinstance({fields}, Sequence)")
+            conditions.append(f"len({fields}) >= {npos}")
             for i in range(npos):
-                conditions.append(self.posargs[i].translate(f"{listvar}[{i}]"))
+                conditions.append(f"({item} := getattr({tmpvar}, {fields}[{i}], _Nope)) is not _Nope")
+                conditions.append(self.posargs[i].translate(item))
         for kw, pat in self.kwargs.items():
-            cond = pat.translate(f"{tmpvar}[{kw!r}]")
-            conditions.append(f"({cond} if {kw!r} in {tmpvar} else False)")
+            conditions.append(f"({item} := getattr({tmpvar}, {kw!r}, _Nope)) is not _Nope")
+            conditions.append(pat.translate(item))
+
+        ## print("\nXXX ========>")
+        ## for cond in conditions:
+        ##     print("XXX ", cond)
+        ##     compile(cond, "XXX", "eval")
+        ## print("XXX <========")
+
         joined = " and ".join(conditions)
         return f"({joined})"
 

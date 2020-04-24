@@ -12,12 +12,13 @@ def checks(pat, x):
     If they match, return whatever pat.match() returned.
     """
     match = pat.match(x)
-    ns = {"_target": x,
+    ns = {"X": x,
           "Sequence": collections.abc.Sequence,
           "Mapping": collections.abc.Mapping,
+          "_Nope": object(),  # Used for "attribute doesn't exist"
           __name__: sys.modules[__name__],
           }
-    res = eval(pat.translate("_target"), ns)
+    res = eval(pat.translate("X"), ns)
     if "__builtins__" in ns:
         del ns["__builtins__"]  # We don't need this for the comparison
     if not res:
@@ -40,7 +41,9 @@ class MyClass:
     def __match__(target):
         if not isinstance(target, MyClass):
             return None
-        return {"x": target.x, "y": target.y}
+        return target
+
+    __pos_match_fields__ = ('x', 'y')
 
 
 def test_constant_pattern():
