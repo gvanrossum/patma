@@ -223,7 +223,7 @@ class MappingPattern(Pattern):
         self.patterns = patterns
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if not _is_instance(x, Mapping):
+        if not isinstance(x, Mapping):
             return None
         matches = {}
         for key, pattern in self.patterns.items():
