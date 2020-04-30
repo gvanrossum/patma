@@ -1,3 +1,5 @@
+# mypy: disallow-untyped-defs
+
 import collections.abc as cabc
 import dataclasses
 import sys
@@ -315,7 +317,7 @@ class InstancePattern(Pattern):
         conditions.append(f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None")
         npos = len(self.posargs)
         if npos > 0:
-            conditions.append(f"({fields} := getattr({tmpvar}, '__pos_match_fields__', None)) is not None")
+            conditions.append(f"({fields} := getattr({tmpvar}, '__match_args__', None)) is not None")
             conditions.append(f"isinstance({fields}, Sequence)")
             conditions.append(f"len({fields}) >= {npos}")
             for i in range(npos):

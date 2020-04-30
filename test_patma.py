@@ -45,7 +45,7 @@ class MyClass:
             return None
         return target
 
-    __pos_match_fields__ = ('x', 'y')
+    __match_args__ = ('x', 'y')
 
 
 def test_constant_pattern():
@@ -114,7 +114,7 @@ def test_int_matches_float():
     pat = AnnotatedPattern(VariablePattern("x"), float)
     match = pat.match(42)
     assert match == {"x": 42}  # TODO: translate should assume int <: float
-    assert type(match) == int  # TODO: translate ditto
+    assert type(match) == dict  # TODO: translate ditto
 
 
 def test_float_doesnt_match_int():
