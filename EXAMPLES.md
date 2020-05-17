@@ -34,7 +34,7 @@ def convert_field(self, value, conversion):
             return repr(value)
         case 'a':
             return ascii(value)
-        else:
+        case _:
             raise ValueError("Unknown conversion specifier {0!s}".format(conversion))
 ```
 
@@ -113,7 +113,7 @@ def write_value(self, value):
         case tuple() | list():
             self.write_array(value)
 
-        else:
+        case _:
             raise TypeError("unsupported type: %s" % type(value))
 ```
 
@@ -169,7 +169,7 @@ def _group_lengths(grouping):
             return chain(rest, repeat(rest[-1]))
         case [*rest, _locale.CHAR_MAX]:
             return rest
-        else:
+        case _:
             raise ValueError('unrecognised format for grouping')
 ```
 
@@ -230,9 +230,9 @@ def _convert(node):
                     return left + right
                 case [int() | float(), complex(), Sub()]:
                     return left - right
-                else:
-                    continue
-        else:
+                case _:
+                    return _convert_signed_num(node)
+        case _:
             return _convert_signed_num(node)
 ```
 
@@ -265,7 +265,7 @@ def optional_value_type(rtype: RType) -> Optional[RType]:
             return b
         case RUnion(items=[a, none_rprimitive]):
             return a
-        else:
+        case _:
             return None
 ```
 
