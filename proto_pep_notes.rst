@@ -2,7 +2,7 @@ PEP: 9999
 Title: Pattern matching
 Version: $Revision$
 Last-Modified: $Date$
-Author: TODO
+Author: TBD
 BDFL-Delegate:
 Discussions-To: Python-Dev <python-dev@python.org>
 Status: Draft
@@ -107,7 +107,7 @@ people to add safety asserts like this::
           assert False, "should never get here"
 
 With the proposed pattern matching such exhaustiveness checks will be added
-automatically. TODO: or not, not decided yet.
+automatically.
 
 Similarly to how constructing objects can be customized by a user-defined
 ``__init__()`` method, we propose that destructuring objects can be customized
@@ -138,7 +138,7 @@ Syntax and Semantics
 Match arms
 ----------
 
-A simplified grammar for the proposed syntax is::
+A simplified approximate grammar for the proposed syntax is::
 
   ...
   compound_statement:
@@ -189,7 +189,7 @@ The proposed large scale semantics for choosing the match is to choose first
 matching pattern and execute the corresponding suite. The remaining patterns
 are not tried. If there are no matching pattens, the ``else`` clause is
 executed. If the latter is absent, an instance of ``UnmatchedValue`` (proposed
-to be a subclass of ``ValueError``) is raised. TODO: or not, not decided yet.
+to be a subclass of ``ValueError``) is raised.
 
 Essentially this is equivalent to a chain of ``if ... elif ... else`` except
 the default ``else`` clause is to raise an exception. Note that unlike for
@@ -204,7 +204,7 @@ statement. For example::
   match shape:
       as Point(x, y):
           ...
-      as Rectangle(x, y, _x, _y):
+      as Rectangle(x, y, _, _):
           ...
   print(x, y)  # This works
 
@@ -228,7 +228,10 @@ building blocks. The following patterns are supported:
 
   Literal pattern uses equality with literal on the right hand side, so that
   in the above example ``number == 1`` and then possibly ``number == 2`` will
-  be evaluated.
+  be evaluated. Note that ``float`` and ``complex`` numbers are not allowed
+  (due to their trickiness with imprecise representation and rounding). Also,
+  although technically negative numbers are represented by an unary operation
+  expression, they are considered literals for the purpose of pattern matching.
 
 * **Name pattern**, that serves as an assignment target for the matched
   expression::
@@ -239,15 +242,50 @@ building blocks. The following patterns are supported:
         as name:
             print(f"Hi {name}!")
 
-  Note that name pattern always succeeds. A name pattern appearing in a scope
-  makes the name local to that scope. For example, using ``name`` after
-  the above snippet may raise ``UnboundLocalError`` rather than ``NameError``,
-  if the ``None`` match arm was taken.
+  A name pattern always succeeds. A name pattern appearing in a scope makes
+  the name local to that scope. For example, using ``name`` after the above
+  snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
+  the ``None`` match arm was taken. While matching against each match arm,
+  a name should be bound at most once, having two name patterns with
+  coinciding names is an error. An exception is made for a special single
+  underscore name::
 
-  TODO: prohibit coinciding names, except underscore.
+    match data:
+        as [x, x]:  # Error!
+            ...
+        as [_, _]:
+            print("Some pair")
 
-* **Reference pattern** is used for constants and enum values. Indicated by dots.
-  Leading dot can be omitted. TODO: add more details.
+  Note: one can still match on a collection with equal items using `guards`_.
+  Also, ``[x, y] | Point(x, y)`` is a legal pattern because the two
+  alternatives are never matched at the same time.
+
+* **Reference pattern** is used to match against constants and enum values.
+  Every dotted name in a pattern is looked up using normal Python name
+  resolution rules, and the value is used for compared by equality with
+  the matching expression (same as for literals). As a special case to avoid
+  ambiguity with name patterns, simple names must be prefixed with a dot to be
+  considered a reference::
+
+    from enum import Enum
+
+    class Color(Enum):
+        BLACK = 1
+        RED = 2
+
+    BLACK = 1
+    RED = 2
+
+    match color:
+        as .BLACK | Color.BLACK:
+            print("Black suits every color")
+        as BLACK:  # This will just assign a new value to BLACK.
+            ...
+
+  Note: the leading dot can be omitted if the name is already dotted, but
+  adding it is not prohibited, so ``.Color.BLACK`` is same as ``Color.BLACK``.
+  See `rejected ideas`_ for other syntactic alternatives that were considered
+  for reference pattern.
 
 * **Sequence pattern** follows the same semantics as iterable unpacking
   Each element can be an arbitrary pattern plus there may be at most one
@@ -260,24 +298,49 @@ building blocks. The following patterns are supported:
         print("Got a nested one")
 
   Note that an arbitrary sequence can match a sequence pattern. For matching
-  on a specific class, see class pattern below.
+  on a specific collection class, see class pattern below. An important
+  deviation from iterable unpacking is that strings do not match sequence
+  patterns.
 
 * **Mapping pattern** is a generalization of iterable unpacking to mappings.
-  Key pattern can be only a literal, and no `**`. TODO: more details.
+  Its syntax is similar to dictionary display but each key and value are
+  patterns ``"{" (pattern ":" pattern)+ "}"``. Only literal and reference
+  patterns are allowed in key position::
 
-* **Class pattern** supports two possible ways of matching: by position
-  like ``Point(x, y)``, and by name like ``User(id=id, name=name)``. These two
-  can be combined, but positional match cannot follow a match by name. Each
-  item in a class match can be an arbitrary pattern, plus at most one ``*name``
-  pattern can be present among positional matches.
-  TODO: brief semantics and extend the example.
-  A simple example::
+    import constants
+
+    match config:
+        as {"route" | "Route": route}:
+            process_route(route)
+        as {constants.DEFAULT_PORT: sub_config}:
+            process_config(sub_config)
+
+  There are no catch-all ``**`` item in the mapping pattern, and all keys are
+  not required to be listed for a match to succeed. This is different from
+  sequence pattern, where extra items will cause a match to fail. But mappings
+  are actually different from sequences: they have natural structural
+  sub-typing behavior, i.e., passing a dictionary with extra keys somewhere
+  will likely just work.
+
+* **Class pattern** provides support for destructuring arbitrary objects.
+  There are two possible ways of matching on object attributes: by position
+  like ``Point(1, 2)``, and by name like ``User(id=id, name="Guest")``. These
+  two can be combined, but positional match cannot follow a match by name.
+  Each item in a class pattern can be an arbitrary pattern, plus at most one
+  ``*name`` pattern can be present among positional matches. A simple
+  example::
 
     match shape:
         as Point(x, y):
             ...
         as Rectangle(*coordinates, painted=True):
             ...
+
+  Whether a match succeeds or not is determined by calling a special
+  ``__match__()`` method on the class with value being matched as the only
+  argument. If the method returns ``None``, the match fails, otherwise the
+  match continues w.r.t. attributes of the returned proxy object, see details
+  in `runtime`_ section.
 
   This PEP only fully specifies the behavior of ``__match__()`` for ``object``
   and some builtin and standard library classes, custom classes are only
@@ -290,22 +353,52 @@ building blocks. The following patterns are supported:
 Combining multiple patterns
 ---------------------------
 
-Patterns (except name pattern) can be combined with ``|``.
-TODO: add more details here.
+Multiple alternative patterns can be combined into one using ``|``. This means
+the the whole pattern matches if at least one alternative matches.
+Alternatives are tried from left to right and have short-circuit property,
+subsequent patterns are not tried if one matched. Examples::
 
+  match something:
+      as 0 | 1 | 2:
+          print("Small number")
+      as [] | [x]:
+          print("A short sequence")
+      as str() | bytes():
+          print("Something string-like")
+      as _:
+          print("Something else")
+
+Name patterns (including named sub-patterns, see below) cannot be among
+alternative patterns, for example both of these are illegal::
+
+  match something:
+      as 1 | x:  # Error!
+          ...
+      as x | 1:  # Error!
+          ...
+      as one := [1] | two := [2]:  # Error!
+          ...
+
+The name patterns can still appear in nested positions among alternatives, so
+a pattern like e.g. ``Foo(arg=x) | Bar(arg=x)`` is valid.
+
+
+.. _guards:
 
 Guards
 ------
 
 Each *top-level* pattern can be followed by a guard of the form
-``if expression``. A match arm succeeds if the pattern matches and
-the guard evaluates to true value. For example::
+``if expression``. A match arm succeeds if the pattern matches and the guard
+evaluates to true value. For example::
 
   match input:
-      as (x, y) if x > MAX_INT and y > MAX_INT:
+      as [x, y] if x > MAX_INT and y > MAX_INT:
           print("Got a pair of large numbers")
       as x if x > MAX_INT:
           print("Got a large number")
+      as [x, y] if x == y:
+          print("Got equal items")
       as _:
           print("Not an outstanding input")
 
@@ -320,8 +413,14 @@ guard succeeds. So this will work::
       ...  # This is not executed
   else:
       ...
-  print(x)  # Will print '0'
+  print(x)  # This will print "0"
 
+Note that guards are not allowed for nested patterns, so that ``[x if x > 0]``
+is a ``SyntaxError`` and ``1 | 2 if 3 | 4`` will be parsed as
+``(1 | 2) if (3 | 4)``.
+
+
+.. _named:
 
 Named sub-patterns
 ------------------
@@ -342,6 +441,7 @@ the match suite, or after the match statement. Another example::
   match group_shapes():
       as [], [point := Point(x, y), *other]:
           print(f"Got {point} in the second group")
+          process_coordinates(x, y)
           ...
 
 Technically, most such examples can be rewritten using guards and/or nested
@@ -451,7 +551,7 @@ expression with a union type::
       match val:
           as [x, *other]:
               return f"A list starting with {x}"
-          as (x, y) if x > 0 and y > 0:
+          as [x, y] if x > 0 and y > 0:
               return f"A pair of {x} and {y}"
           as int(...):
               return f"Some integer"
@@ -478,11 +578,9 @@ and enum values are combined::
   account: Union[User, Admin]
 
   match account:
-      as Admin(name=name):
+      as Admin(name=name) | User(name=name, level=Level.PRO):
           ...
-      as User(name=name, level=level) if level == Level.PRO
-          ...
-      as User(level=level) if level == Level.ADVANCED:
+      as User(level=Level.ADVANCED):
           ...
       # Type-checking error: basic user unhandled
 
@@ -603,7 +701,7 @@ Note about constants
 
 The fact that name pattern is always an assignment target may create unwanted
 consequences when a user by mistake tries to "match" a value against
-a constant instead of using thr reference pattern. As a result, at runtime
+a constant instead of using the reference pattern. As a result, at runtime
 such match will always succeed and moreover override the value of
 the constant. It is important therefore that static type checkers warn about
 such situations. For example::
@@ -616,6 +714,8 @@ such situations. For example::
 
   match value:
       as MAX_INT:  # Type-checking error here: cannot assign to final name
+          print("Got big number")
+      as .MAX_INT:  # This is OK
           print("Got big number")
       as _:
           print("Something else")
@@ -693,9 +793,8 @@ adding ``isinstance()`` and ``getattr()`` to iterable unpacking. Also, we
 believe the proposed syntax significantly improves readability for a wide
 range of code patterns, by allowing to express *what* one wants to do, rather
 than *how* to do it. We hope few real code snippets we included in the PEP
-above illustrate this comparison well enough.
-
-TODO: either add a link to examples, or select the best and add here.
+above illustrate this comparison well enough. For more real code examples
+and their translations see Ref. [7]_.
 
 
 Allow more flexible assignment targets instead
@@ -770,7 +869,11 @@ part::
   as pattern_2:
       ...
 
-TODO: add motivation why this is rejected.
+The motivation is that although flat indentation saves some horizontal space,
+it may look awkward to an eye of a Python programmer, because everywhere else
+colon is followed by an indent. This will also complicate life for
+simple-minded code editors. Finally, the horizontal space issue can be
+alleviated by allowing "half-indent" (i.e. two spaces) for match statements.
 
 
 Alternatives for reference pattern
@@ -931,6 +1034,9 @@ References
 
 .. [6]
    https://docs.python.org/3/library/typing.html
+
+.. [7]
+   https://github.com/gvanrossum/patma/blob/master/EXAMPLES.md
 
 
 Copyright
