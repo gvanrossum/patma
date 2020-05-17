@@ -292,10 +292,10 @@ building blocks. The following patterns are supported:
   ``*name`` pattern to catch all remaining items::
 
     match collection:
-    as [1, x, *other]:
-        print("At least two elements")
-    as [1, [x, *other]]:
-        print("Got a nested one")
+        as [1, x, *other]:
+            print(f"At least two elements, second is {x}")
+        as [1, [x, *other]]:
+            print("Got a nested sequence")
 
   Note that an arbitrary sequence can match a sequence pattern. For matching
   on a specific collection class, see class pattern below. An important
@@ -409,10 +409,10 @@ guard succeeds. So this will work::
   values = [0]
 
   match value:
-  as [x] if x:
-      ...  # This is not executed
-  else:
-      ...
+      as [x] if x:
+          ...  # This is not executed
+      as _:
+          ...
   print(x)  # This will print "0"
 
 Note that guards are not allowed for nested patterns, so that ``[x if x > 0]``
@@ -466,7 +466,7 @@ as equivalent to the following expansion::
   match value:
       as pattern [if guard]:
           ...
-      else:
+      as _:
           pass  # Note: not raising UnmatchedValue exception here
 
 There will be no ``elif match`` statements allowed. One-off match is special
@@ -500,22 +500,77 @@ Runtime specification
 The ``__match__()`` protocol
 ----------------------------
 
-TODO: update this part of the spec.
+The ``__match__()`` method is used to decide whether an object matches a given
+class pattern and to extract the corresponding attributes. The procedure is as
+following:
+
+* The class object for ``Class`` in ``Class(<sub-patterns>)`` is looked up and
+  ``Class.__match__(obj)`` is called where ``obj`` is the value being matched.
+
+* If the result of the call (which we are referring to as "match proxy") is
+  ``None``, the match fails.
+
+* Otherwise, the attributes requested in match by name items are looked up on
+  the returned proxy and matched against corresponding sub-patterns. If at
+  least one sub-patterns fails, the match fails.
+
+* If an attribute is missing on the proxy, and it has no ``__match_args__``
+  attribute, an ``ImpossibleMatchError`` is raised. This is motivated by
+  catching typos in attribute names. Conceptually, a pattern ``Foo(bar=value)``
+  translates to ``isinstance(obj, Foo) and obj.bar == val``, and the latter
+  raises on missing attributes.
+
+* If the missing attribute is present in ``__match_args__`` (that must be a list
+  of strings), the match fails instead of rising an exception.
+
+* If there are match by position items, the item at position ``i`` is matched
+  against value looked up by attribute ``__match_args__[i]``. For example,
+  a pattern ``Point2D(5, 8)``, where ``Point2D.__match__()`` returns a proxy
+  with ``__match_args__ == ["x", "y"]``, is translated (approximately) into
+  ``obj.x == 5 and obj.y == 8``.
+
+* If there are more positional items than the length of ``__match_args__``, an
+  ``ImpossibleMatchError`` is raised.
+
+* If ``__match_args__`` attribute is absent on returned proxy, but positional
+  items appear in a match, the exception is also raised. We don't fall back on
+  using ``__slots__`` or ``__annotations__`` -- "In the face of ambiguity,
+  refuse the temptation to guess."
+
+Such protocol favors simplicity of implementation over flexibility and
+performance, for other considered alternatives, see `rejected ideas`_.
 
 
-Impossible matches
--------------------
+Ambiguous matches
+-----------------
 
-Impossible and ambiguous matches will be detected by the runtime and
-an exception will be raised. TODO: add spec here.
+Impossible and ambiguous matches are detected by the runtime and a special
+exception ``ImpossibleMatchError`` (proposed to be a subclass of ``TypeError``)
+will be raised. In addition to basic checks described in the previous
+subsection:
+
+* The interpreter will check that two match items are not targeting the same
+  attribute, for example ``Point2D(1, 2, y=3)`` is an error.
+
+* If the match proxy has ``__match_args_required__`` attribute (which should
+  be a positive integer), the interpreter checks that all attributes in
+  ``__match_args__[:__match_args_required__]`` are matched. For example,
+  ``Point2D(1)`` is an error if ``__match_args_required__ == 2``.
+
+* As a clarification to above, the required attributes are not required to be
+  matched *by position*, they are just required to be matched, so that
+  ``Point2D(1, y=2)`` is still valid when ``__match_args_required__ == 2``.
+
+* Finally, by name only matches always succeed, even when
+  ``__match_args_required__`` is provided.
 
 
 Default ``object.__match__()``
 ------------------------------
 
 The default implementation is aimed at providing basic useful (but still safe)
-experience with pattern matching out of the box. For this purpose the match
-method follows this logic (pseudo-code)::
+experience with pattern matching out of the box. For this purpose the default
+``__match__()`` method follows this logic (pseudo-code)::
 
   class object:
       @classmethod
@@ -523,14 +578,79 @@ method follows this logic (pseudo-code)::
           if isinstance(instance, cls):
               return instance
 
-TODO: add motivation here.
+This means that pattern matching is allowed by default for every class. If
+a class wants to disallow pattern matching against itself, it should define
+``__match__ = None``. This will cause an exception when trying to match
+against such class.
+
+The above implementation means that by default only match by name will work,
+and classes should define provide ``__match_args__`` (e.g. as a class
+attribute) if they would like to support match by position. Also dataclasses
+will provide the match by position out of the box, see below.
+
+Finally, all attributes are exposed for matching, if a class wants to hide
+some attributes from matching against them, a custom ``__match__()`` method is
+required.
 
 
 Builtin classes and standard library
 ------------------------------------
 
-TODO: add named tuples dataclasses (and maybe some other) here.
-TODO: mention the ``patterns`` module.
+To facilitate the use of pattern matching, several changes will be made to
+builtins and standard library:
+
+* Builtin collections (except sets) will define ``__match__`` and/or
+  ``__match_args__`` to support matching a specific class rather than sequence
+  or mapping in general. For example::
+
+    match collection:
+        as tuple([x, y, z]):
+            ...
+        as list([x, y, z]):
+            ...
+
+* Named tuples and dataclasses will have auto-generated ``__match_args__`` and
+  ``__match_args_required__``.
+
+* For dataclasses the order of attributes in the generated ``__match_args__``
+  will the same as order of corresponding arguments in the generated
+  ``__init__()`` method. This includes the situations where attributes are
+  inherited from a superclass.
+
+* For dataclasses the ``__match_args_required__`` includes all fields
+  without a default value, or a default factory.
+
+A new ``patterns`` module will be added to the standard library. It will
+contain various helpers to simply defining custom ``__match__()`` methods. In
+particular, a thin wrapper class ``MatchWrapper`` that will allow hiding and
+adding attributes for match purpose, setting ``__match_args__`` etc.
+For example::
+
+  from patterns import MatchWrapper
+
+  class Point:
+      def __init__(self, x: int, y: int) -> None:
+          self.x = x
+          self.y = y
+          self._processed = False
+
+      @classmethod
+      def __match__(cls, obj):
+          if isinstance(obj, cls):
+              return MatchWrapper(obj, ['x', 'y'], coordinates=[obj.x, obj.y])
+
+  p = Point(1, 2)
+  match p:
+      as Point(x, y):  # This works
+          ...
+      as Point(coordinates=[1, 2]):  # Also works
+          ...
+      as Point(_processed=False):  # Not included in allowed attributes, raises
+          ...
+
+In addition, a systematic effort will be put into going through existing
+standard library classes and adding custom ``__match__()`` and/or
+``__match_args__`` where it looks beneficial.
 
 
 .. _static checkers:
@@ -890,10 +1010,10 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-    as FOO:  # This would not be matched
-        ...
-    as BAR:
-        ...  # This would be matched
+        as FOO:  # This would not be matched
+            ...
+        as BAR:
+            ...  # This would be matched
 
   This however can cause surprises and action at a distance if someone
   defines an unrelated coinciding name before the match statement.
@@ -905,10 +1025,10 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-    as (FOO):  # This would not be matched
-        ...
-    as BAR:
-        ...  # This would be matched
+        as (FOO):  # This would not be matched
+            ...
+        as BAR:
+            ...  # This would be matched
 
   This may be a viable option, but it can create some visual noise if used
   often. Also honestly it looks pretty unusual, especially in nested contexts.
@@ -920,10 +1040,10 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-    as $FOO:  # This would not be matched
-        ...
-    as BAR:
-        ...  # This would be matched
+        as $FOO:  # This would not be matched
+            ...
+        as BAR:
+            ...  # This would be matched
 
   The problem with this approach is that introducing a new syntax for such
   narrow use-case is probably an overkill.
@@ -935,10 +1055,10 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-    as FOO:  # This would not be matched
-        ...
-    as $BAR:
-        ...  # This would be matched
+        as FOO:  # This would not be matched
+            ...
+        as $BAR:
+            ...  # This would be matched
 
   But the name patterns are more common in typical code, so having special
   syntax for common case would be weird.
