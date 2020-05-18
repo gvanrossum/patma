@@ -55,7 +55,7 @@ This is in contrast with the opposite sides of both aspects:
   data structures such as e.g. lists and arrays, and semantic constructs such
   as iterators and generators.
 
-* Python is expressive and flexible at constructing object. It has syntactic
+* Python is expressive and flexible at constructing objects. It has syntactic
   support for collection literals and comprehensions. Custom objects can be
   created using positional and keyword calls that are customized by special
   ``__init__()`` method.
@@ -118,7 +118,7 @@ and for some standard library classes (including PEP 557 dataclasses). See
 
 Finally, we aim to provide a comprehensive support for static type checkers
 and similar tools. For this purpose we propose to introduce a
-``@typing.sealed`` class decorator that will be idempotent at runtime, but
+``@typing.sealed`` class decorator that will be a no-op at runtime, but
 will indicate to static tools that all subclasses of this class must be defined
 in the same module. This will allow effective static exhaustiveness checks,
 and together with dataclasses, will provide a nice support for algebraic data
@@ -149,7 +149,7 @@ A simplified approximate grammar for the proposed syntax is::
   case_block: "as" pattern ["if" expression] ":" block
   pattern:
       | NAME
-      | [NAME ":="] other_pattern ("|" other_pattern)
+      | [NAME ":="] other_pattern ("|" other_pattern)*
   other_pattern:
       | literal_pattern
       | reference_pattern
@@ -158,7 +158,7 @@ A simplified approximate grammar for the proposed syntax is::
       | class_pattern
 
 We propose the match syntax to be a statement, not expression. Although in
-many languages it is an expression, being a statement better suites the general
+many languages it is an expression, being a statement better suits the general
 logic of Python syntax. See `rejected ideas`_ for more discussion. The list of
 allowed patterns is specified below in the `patterns`_ subsection.
 
@@ -174,12 +174,6 @@ indentation structure is as following::
             ...
         as pattern_2:
             ...
-
-Such layout saves an indentation level and matches a common indentation scheme
-for ``switch`` statement in C language. Although this may be tricky for some
-simple-minded editors, it should be not hard to support in principle, one just
-needs to not add indentation level after a colon if the previous line starts
-with ``match``.
 
 
 Match semantics
@@ -305,7 +299,7 @@ building blocks. The following patterns are supported:
 * **Mapping pattern** is a generalization of iterable unpacking to mappings.
   Its syntax is similar to dictionary display but each key and value are
   patterns ``"{" (pattern ":" pattern)+ "}"``. Only literal and reference
-  patterns are allowed in key position::
+  patterns are allowed in key positions::
 
     import constants
 
@@ -337,8 +331,10 @@ building blocks. The following patterns are supported:
             ...
 
   Whether a match succeeds or not is determined by calling a special
-  ``__match__()`` method on the class with value being matched as the only
-  argument. If the method returns ``None``, the match fails, otherwise the
+  ``__match__()`` method on the class named in the pattern
+  (`Point` or `Rectangle` in the example),
+  with the value being matched (`shape`) as the only argument.
+  If the method returns ``None``, the match fails, otherwise the
   match continues w.r.t. attributes of the returned proxy object, see details
   in `runtime`_ section.
 
@@ -993,7 +989,7 @@ The motivation is that although flat indentation saves some horizontal space,
 it may look awkward to an eye of a Python programmer, because everywhere else
 colon is followed by an indent. This will also complicate life for
 simple-minded code editors. Finally, the horizontal space issue can be
-alleviated by allowing "half-indent" (i.e. two spaces) for match statements.
+alleviated by allowing "half-indent" (i.e. two spaces instead of four) for match statements.
 
 
 Alternatives for reference pattern
@@ -1175,4 +1171,3 @@ CC0-1.0-Universal license, whichever is more permissive.
    fill-column: 70
    coding: utf-8
    End:
-
