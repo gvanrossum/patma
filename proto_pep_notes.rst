@@ -9,7 +9,7 @@ Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 2020-05-04
-Python version: 3.10
+Python-Version: 3.10
 Resolution:
 
 Abstract
@@ -332,8 +332,8 @@ building blocks. The following patterns are supported:
 
   Whether a match succeeds or not is determined by calling a special
   ``__match__()`` method on the class named in the pattern
-  (`Point` or `Rectangle` in the example),
-  with the value being matched (`shape`) as the only argument.
+  (``Point`` and ``Rectangle`` in the example),
+  with the value being matched (``shape``) as the only argument.
   If the method returns ``None``, the match fails, otherwise the
   match continues w.r.t. attributes of the returned proxy object, see details
   in `runtime`_ section.
