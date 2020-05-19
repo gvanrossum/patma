@@ -1013,6 +1013,26 @@ with name patterns. Four other alternatives were considered:
   This however can cause surprises and action at a distance if someone
   defines an unrelated coinciding name before the match statement.
 
+* Use a rule based on the case of a name. In particular, if the name
+  starts with a lowercase letter it would be a name pattern, while if
+  it starts with uppercase it would refer to a constant::
+
+    FOO = 1
+    value = 0
+
+    match value:
+        as FOO:  # This would not be matched
+            ...
+        as bar:
+            ...  # This would be matched
+
+  This works well with the recommendations for naming constants from
+  PEP 8. The main objection is that there's no other part of core
+  Python where the case of a name is semantically significant. (Then
+  again a leading dot in an expression has no precedent either -- its
+  use in ``import`` statements is quite different, since it resembles
+  the ``.`` used to denote the current directory in filesystems.)
+
 * Use extra parentheses to indicate lookup semantics for a given name. For
   example::
 
@@ -1027,6 +1047,10 @@ with name patterns. Four other alternatives were considered:
 
   This may be a viable option, but it can create some visual noise if used
   often. Also honestly it looks pretty unusual, especially in nested contexts.
+
+  This also has the problem that we may want or need parentheses to
+  disambiguate grouping in patterns, e.g. in ``Point(x, y=(y :=
+  complex()))``.
 
 * Introduce a special symbol, for example ``$`` or ``^`` to indicate that
   given name is a constant to be matched against, not to be assigned to::
@@ -1058,7 +1082,7 @@ with name patterns. Four other alternatives were considered:
   But the name patterns are more common in typical code, so having special
   syntax for common case would be weird.
 
-After all, these alternatives were rejected because of mentioned drawbacks.
+In the end, these alternatives were rejected because of the mentioned drawbacks.
 
 
 Use dispatch dict semantics for matches
