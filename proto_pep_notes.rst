@@ -35,7 +35,7 @@ Rationale and Goals
 Let us start from some anecdotal evidence: ``isinstance()`` is one of the most
 called functions in large scale Python code-bases (by static call count).
 In particular, when analyzing some multi-million line production code base,
-it was discovered that ``isinstance()`` is the second mast called builtin
+it was discovered that ``isinstance()`` is the second most called builtin
 function (after ``len()``). Even taking into account builtin classes, it is
 still in the top ten. Most of such calls are followed by specific attribute
 access.
@@ -166,8 +166,7 @@ The ``match`` word is proposed to be a soft keyword, so that it is recognized
 as a keyword at the beginning of match statement, but is allowed to be used in
 other positions as a variable or argument name.
 
-Note that there can be more than one match arm per match suite. The proposed
-indentation structure is as following::
+The proposed indentation structure is as following::
 
     match some_expression:
         as pattern_1:
