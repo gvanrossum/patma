@@ -774,20 +774,20 @@ checker can give a useful error message)::
 Type erasure
 ------------
 
-The class patterns are subject to runtime type erasure. Namely, although one
+Class patterns are subject to runtime type erasure. Namely, although one
 can define a type alias``IntQueue = Queue[int]`` so that a pattern like
 ``IntQueue()`` is syntactically valid, type checkers should rejected such
 match::
 
   queue: Union[Queue[int], Queue[str]]
   match queue:
-      as IntQueue():  # Type-checking error here.
+      as IntQueue():  # Type-checking error here
           ...
 
 Note that the above snippet actually fails at runtime with the current
-implementation of generic classes in ``typing`` module, and builtin generic
-classes in recently accepted and PEP 585 because they prohibit ``isinstance``
-checks.
+implementation of generic classes in the ``typing`` module, as well as
+with builtin generic classes in the recently accepted PEP 585, because
+they prohibit ``isinstance`` checks.
 
 To clarify, generic classes are not prohibited in general from participating
 in pattern matching, just that their type parameters can't be explicitly
