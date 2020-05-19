@@ -536,6 +536,32 @@ Such protocol favors simplicity of implementation over flexibility and
 performance, for other considered alternatives, see `rejected ideas`_.
 
 
+Result value of ``__match__``:
+------------------------------
+
+If a match is successful, the ``__match__`` method should return an object
+whose attribute values will then be bound to the corresponding keyword argument
+names in the pattern after the match is complete. For each possible name that is
+legal in the match pattern, the returned object should have a corresponding attribute
+with that name, that can be used to access that value.
+
+For most ordinary objects, this returned object can simply be the original object,
+unchanged.
+
+However, there may be cases where the internal implementation of a class is
+very different than its public representation, for example a ``Point`` class with
+`x`, `y` and `z` attributes may be represented internally as a vector; in such cases
+a 'proxy object' may be returned whose attributes correspond to the matchable names.
+There is no requirement that the attributes on the proxy object be the same type or
+value as the attributes of the original object; one envisioned use case is for
+expensive-to-compute properties to be computed lazily on the proxy object via
+property getters.
+
+In deciding what names should be available for matching, the recommended practice
+is that class patterns should be the mirror of construction; that is, the set of
+available names and their types should resemble the arguments to ``__init__``.
+
+
 Ambiguous matches
 -----------------
 
