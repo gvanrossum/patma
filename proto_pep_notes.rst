@@ -323,14 +323,13 @@ building blocks. The following patterns are supported:
   There are two possible ways of matching on object attributes: by position
   like ``Point(1, 2)``, and by name like ``User(id=id, name="Guest")``. These
   two can be combined, but positional match cannot follow a match by name.
-  Each item in a class pattern can be an arbitrary pattern, plus at most one
-  ``*name`` pattern can be present among positional matches. A simple
+  Each item in a class pattern can be an arbitrary pattern. A simple
   example::
 
     match shape:
         as Point(x, y):
             ...
-        as Rectangle(*coordinates, painted=True):
+        as Rectangle(x0, y0, x1, y1, painted=True):
             ...
 
   Whether a match succeeds or not is determined by calling a special
