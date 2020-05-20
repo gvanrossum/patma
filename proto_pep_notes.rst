@@ -225,6 +225,8 @@ building blocks. The following patterns are supported:
   (due to their trickiness with imprecise representation and rounding). Also,
   although technically negative numbers are represented by an unary operation
   expression, they are considered literals for the purpose of pattern matching.
+  Raw strings and byte strings are supported. F-strings are not allowed
+  (since in general they are not really literals).
 
 * **Name pattern**, that serves as an assignment target for the matched
   expression::
