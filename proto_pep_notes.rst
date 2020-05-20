@@ -282,7 +282,7 @@ building blocks. The following patterns are supported:
   See `rejected ideas`_ for other syntactic alternatives that were considered
   for reference pattern.
 
-* **Sequence pattern** follows the same semantics as iterable unpacking
+* **Sequence pattern** follows the same semantics as sequence unpacking.
   Each element can be an arbitrary pattern plus there may be at most one
   ``*name`` pattern to catch all remaining items::
 
@@ -292,14 +292,15 @@ building blocks. The following patterns are supported:
         as [1, [x, *other]]:
             print("Got a nested sequence")
 
-  Note that an arbitrary sequence can match a sequence pattern. For matching
-  on a specific collection class, see class pattern below. An important
-  deviation from iterable unpacking is that strings do not match sequence
-  patterns.
+  Note that to match a sequence pattern the target must be an instance of
+  ``collections.abc.Sequence``, and it cannot be any kind of string
+  (``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
+  on a specific collection class, see class pattern below.
 
 * **Mapping pattern** is a generalization of iterable unpacking to mappings.
   Its syntax is similar to dictionary display but each key and value are
-  patterns ``"{" (pattern ":" pattern)+ "}"``. Only literal and reference
+  patterns ``"{" (pattern ":" pattern)+ "}"``. A `**name`` pattern is also
+  allowed, to extract the remaining items.  Only literal and reference
   patterns are allowed in key positions::
 
     import constants
@@ -307,11 +308,12 @@ building blocks. The following patterns are supported:
     match config:
         as {"route" | "Route": route}:
             process_route(route)
-        as {constants.DEFAULT_PORT: sub_config}:
-            process_config(sub_config)
+        as {constants.DEFAULT_PORT: sub_config, **rest}:
+            process_config(sub_config, rest)
 
-  There are no catch-all ``**`` item in the mapping pattern, and all keys are
-  not required to be listed for a match to succeed. This is different from
+  The target must be an instance of ``collections.abc.Mapping``.
+  Extra keys in the target are ignored even if ``**rest`` is not present.
+  This is different from
   sequence pattern, where extra items will cause a match to fail. But mappings
   are actually different from sequences: they have natural structural
   sub-typing behavior, i.e., passing a dictionary with extra keys somewhere
