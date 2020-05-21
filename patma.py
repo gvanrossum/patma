@@ -2,8 +2,9 @@
 
 import collections.abc as cabc
 import dataclasses
+import itertools
 import sys
-from typing import Dict, List, Optional, Type, Mapping
+from typing import Dict, List, Mapping, Optional, Set, Type
 
 __all__ = [
     "Pattern",
@@ -80,6 +81,17 @@ class Pattern:
         """
         raise NotImplementedError
 
+    def bindings(self, strict=True) -> Set[str]:
+        """Compute set of variables bound by a pattern.
+
+        The variable `_` is excluded from the result.
+
+        If strict=True (default), raise for certain errors:
+        - Inconsistent bindings in arms of alternatives
+        - Multiple bindings to the same variable
+        """
+        raise NotImplementedError
+
 
 def _is_instance(x: object, t: type) -> bool:
     """Like instance() but pretend int subclasses float.
@@ -111,6 +123,9 @@ class ConstantPattern(Pattern):
         # TODO: complex
         return f"({target} == {self.constant!r})"
 
+    def bindings(self, strict=True) -> Set[str]:
+        return set()
+
 
 class AlternativesPattern(Pattern):
     """A pattern consisting of several alternatives.
@@ -131,6 +146,18 @@ class AlternativesPattern(Pattern):
     def translate(self, target: str) -> str:
         return f"({' or '.join(p.translate(target) for p in self.patterns)})"
 
+    def bindings(self, strict=True) -> Set[str]:
+        if not self.patterns:
+            return set()
+        result = self.patterns[0].bindings(strict)
+        for p in self.patterns[1:]:
+            b = p.bindings()
+            if strict and b != result:
+                # TODO: Better message and a custom exception
+                raise ValueError("Inconsistent bindings in alternative")
+            result |= b
+        return result
+
 
 class VariablePattern(Pattern):
     """A value extraction pattern.
@@ -147,6 +174,12 @@ class VariablePattern(Pattern):
 
     def translate(self, target: str) -> str:
         return f"({self.name} := {target},)"
+
+    def bindings(self, strict=True) -> Set[str]:
+        if self.name == "_":
+            return set()
+        else:
+            return {self.name}
 
 
 def _full_class_name(cls: type) -> str:
@@ -181,6 +214,9 @@ class AnnotatedPattern(Pattern):
         # TODO: numeric tower
         return f"(isinstance({target}, {_full_class_name(self.cls)}) and {self.pattern.translate(target)})"
 
+    def bindings(self, strict=True) -> Set[str]:
+        return self.pattern.bindings(strict)
+
 
 class SequencePattern(Pattern):
     """A pattern for a (fixed) sequence of subpatterns.
@@ -213,6 +249,16 @@ class SequencePattern(Pattern):
         per_item = (p.translate(f"{target}[{i}]") for i, p in enumerate(self.patterns))
         return f"(isinstance({target}, Sequence) and len({target}) == {len(self.patterns)} and {' and '.join(per_item)})"
 
+    def bindings(self, strict=True) -> Set[str]:
+        result = set()
+        for p in self.patterns:
+            b = p.bindings(strict)
+            if strict and b & result:
+                # TODO
+                raise ValueError("Duplicate bindings in sequence pattern")
+            result |= b
+        return result
+
 
 class MappingPattern(Pattern):
     """A pattern for a mapping.
@@ -244,6 +290,16 @@ class MappingPattern(Pattern):
         per_item = (f"({key!r} in {target} and " + pat.translate(f"{target}[{key!r}]") + ")"
                     for key, pat in self.patterns.items())
         return f"(isinstance({target}, Mapping) and {' and '.join(per_item)})"
+
+    def bindings(self, strict=True) -> Set[str]:
+        result = set()
+        for key, p in self.patterns.items():
+            b = p.bindings(strict)
+            if strict and b & result:
+                # TODO
+                raise ValueError("Duplicate bindings in mapping pattern")
+            result |= b
+        return result
 
 
 def _get_stack_depth() -> int:
@@ -336,6 +392,15 @@ class InstancePattern(Pattern):
         joined = " and ".join(conditions)
         return f"({joined})"
 
+    def bindings(self, strict=True) -> Set[str]:
+        result = set()
+        for p in itertools.chain(self.posargs, self.kwargs.values()):
+            b = p.bindings(strict)
+            if strict and b & result:
+                raise ValueError("Duplicate bindings in instance pattern")
+            result |= b
+        return result
+
 
 class WalrusPattern(Pattern):
     """A pattern using a walrus operator.
@@ -357,3 +422,12 @@ class WalrusPattern(Pattern):
 
     def translate(self, target: str) -> str:
         return f"(({self.name} := {target},) if {self.pattern.translate(target)} else False)"
+
+    def bindings(self, strict=True) -> Set[str]:
+        result = self.pattern.bindings(strict)
+        if self.name != "_":
+            if strict and self.name in result:
+                # TODO
+                raise ValueError("Duplicate bindings in walrus pattern")
+            result |= {self.name}
+        return result
