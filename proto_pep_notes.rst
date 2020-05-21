@@ -135,7 +135,7 @@ Scala [4]_.
 Syntax and Semantics
 ====================
 
-case clauses
+Case clauses
 ------------
 
 A simplified approximate grammar for the proposed syntax is::
