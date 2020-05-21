@@ -135,8 +135,8 @@ Scala [4]_.
 Syntax and Semantics
 ====================
 
-Match arms
-----------
+Case clauses
+------------
 
 A simplified approximate grammar for the proposed syntax is::
 
@@ -240,7 +240,7 @@ building blocks. The following patterns are supported:
   A name pattern always succeeds. A name pattern appearing in a scope makes
   the name local to that scope. For example, using ``name`` after the above
   snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
-  the ``None`` match arm was taken. While matching against each match arm,
+  the ``None`` case clause was taken. While matching against each case clause,
   a name should be bound at most once, having two name patterns with
   coinciding names is an error. An exception is made for a special single
   underscore name::
@@ -387,7 +387,7 @@ Guards
 ------
 
 Each *top-level* pattern can be followed by a guard of the form
-``if expression``. A match arm succeeds if the pattern matches and the guard
+``if expression``. A case clause succeeds if the pattern matches and the guard
 evaluates to true value. For example::
 
   match input:
@@ -401,7 +401,7 @@ evaluates to true value. For example::
           print("Not an outstanding input")
 
 If evaluating a guard raises an exception, it is propagated onwards rather
-than fail the match arm. Names that appear in a pattern are bound before the
+than fail the case clause. Names that appear in a pattern are bound before the
 guard succeeds. So this will work::
 
   values = [0]
@@ -452,7 +452,7 @@ One-off matches
 ---------------
 
 While inspecting some code-bases that may benefit the most from the proposed
-syntax, it was found that single arm matches would be used relatively often,
+syntax, it was found that single clause matches would be used relatively often,
 mostly for various special-casing. In other languages this is supported in
 the form of one-off matches. We propose to support such one-off matches too::
 
@@ -984,11 +984,11 @@ syntax highlighters, we decided not to use hard keyword for several reasons:
   meaning of the statement.
 
 
-Use ``case`` instead of ``as`` for match arms
----------------------------------------------
+Use ``case`` instead of ``as`` for case clauses
+-----------------------------------------------
 
 There are three arguments in favour of using ``as`` as a keyword to start each
-match arm:
+case clause:
 
 * It is a bit shorter so will save some keystrokes and horizontal space, which
   may be important since this keyword will be repeated many times.
@@ -1004,7 +1004,7 @@ Use a flat indentation scheme
 -----------------------------
 
 There was an idea to use an alternative indentation scheme, for example where
-every match arm would not be indented with respect to the initial ``match``
+every case clause would not be indented with respect to the initial ``match``
 part::
 
   match expression:
