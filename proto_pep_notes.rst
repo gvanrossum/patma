@@ -366,9 +366,8 @@ subsequent patterns are not tried if one matched. Examples::
       as _:
           print("Something else")
 
-Patterns that bind variables other than ``_`` (including named
-sub-patterns, see below) cannot be among alternative patterns, for
-example all these are illegal::
+The alternatives may bind variables, as long as each alternative binds
+the same set of variables (excluding ``_``).  For example::
 
   match something:
       as 1 | x:  # Error!
@@ -377,7 +376,9 @@ example all these are illegal::
           ...
       as one := [1] | two := [2]:  # Error!
           ...
-      as Foo(arg=x) | Bar(arg=x):  # Error!
+      as Foo(arg=x) | Bar(arg=x):  # Valid, both arms bind 'x'
+          ...
+      as [x] | x:  # Valid, both arms bind 'x'
           ...
 
 
