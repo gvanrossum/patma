@@ -359,15 +359,16 @@ subsequent patterns are not tried if one matched. Examples::
   match something:
       as 0 | 1 | 2:
           print("Small number")
-      as [] | [x]:
+      as [] | [_]:
           print("A short sequence")
       as str() | bytes():
           print("Something string-like")
       as _:
           print("Something else")
 
-Name patterns (including named sub-patterns, see below) cannot be among
-alternative patterns, for example both of these are illegal::
+Patterns that bind variables other than ``_`` (including named
+sub-patterns, see below) cannot be among alternative patterns, for
+example all these are illegal::
 
   match something:
       as 1 | x:  # Error!
@@ -376,9 +377,8 @@ alternative patterns, for example both of these are illegal::
           ...
       as one := [1] | two := [2]:  # Error!
           ...
-
-The name patterns can still appear in nested positions among alternatives, so
-a pattern like e.g. ``Foo(arg=x) | Bar(arg=x)`` is valid.
+      as Foo(arg=x) | Bar(arg=x):  # Error!
+          ...
 
 
 .. _guards:
