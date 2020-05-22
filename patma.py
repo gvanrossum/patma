@@ -287,8 +287,10 @@ class MappingPattern(Pattern):
 
     def translate(self, target: str) -> str:
         # TODO: arrange to import Mapping
-        per_item = (f"({key!r} in {target} and " + pat.translate(f"{target}[{key!r}]") + ")"
-                    for key, pat in self.patterns.items())
+        per_item = (
+            f"({key!r} in {target} and " + pat.translate(f"{target}[{key!r}]") + ")"
+            for key, pat in self.patterns.items()
+        )
         return f"(isinstance({target}, Mapping) and {' and '.join(per_item)})"
 
     def bindings(self, strict=True) -> Set[str]:
@@ -370,17 +372,25 @@ class InstancePattern(Pattern):
         fields = f"_f{depth}"
         item = f"_i{depth}"
         conditions = []
-        conditions.append(f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None")
+        conditions.append(
+            f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None"
+        )
         npos = len(self.posargs)
         if npos > 0:
-            conditions.append(f"({fields} := getattr({tmpvar}, '__match_args__', None)) is not None")
+            conditions.append(
+                f"({fields} := getattr({tmpvar}, '__match_args__', None)) is not None"
+            )
             conditions.append(f"isinstance({fields}, Sequence)")
             conditions.append(f"len({fields}) >= {npos}")
             for i in range(npos):
-                conditions.append(f"({item} := getattr({tmpvar}, {fields}[{i}], _Nope)) is not _Nope")
+                conditions.append(
+                    f"({item} := getattr({tmpvar}, {fields}[{i}], _Nope)) is not _Nope"
+                )
                 conditions.append(self.posargs[i].translate(item))
         for kw, pat in self.kwargs.items():
-            conditions.append(f"({item} := getattr({tmpvar}, {kw!r}, _Nope)) is not _Nope")
+            conditions.append(
+                f"({item} := getattr({tmpvar}, {kw!r}, _Nope)) is not _Nope"
+            )
             conditions.append(pat.translate(item))
 
         ## print("\nXXX ========>")
