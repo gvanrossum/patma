@@ -16,7 +16,28 @@ __all__ = [
     "MappingPattern",
     "InstancePattern",
     "WalrusPattern",
+    "BindingsError",
+    "InconsistentBindings",
+    "DuplicateBindings",
 ]
+
+
+class BindingsError(Exception):
+    """Invalid bindings detected.
+
+    A subclass of this is raised for cases like these:
+
+    - case [] | [x]: ...
+    - case [x, x]: ...
+    """
+
+
+class InconsistentBindings(BindingsError):
+    """Not all alternatives bind the same set of variables."""
+
+
+class DuplicateBindings(BindingsError):
+    """Variable bound more than once."""
 
 
 class Pattern:
@@ -150,11 +171,14 @@ class AlternativesPattern(Pattern):
         if not self.patterns:
             return set()
         result = self.patterns[0].bindings(strict)
-        for p in self.patterns[1:]:
+        for i, p in enumerate(self.patterns[1:], 1):
             b = p.bindings()
             if strict and b != result:
-                # TODO: Better message and a custom exception
-                raise ValueError("Inconsistent bindings in alternative")
+                raise InconsistentBindings(
+                    f"Alternatives 0 and {i} bind inconsistent sets of variables: "
+                    + f"{sorted(result)} vs. {sorted(b)} "
+                    + f"(difference: {sorted(b ^ result)})"
+                )
             result |= b
         return result
 
@@ -254,8 +278,9 @@ class SequencePattern(Pattern):
         for p in self.patterns:
             b = p.bindings(strict)
             if strict and b & result:
-                # TODO
-                raise ValueError("Duplicate bindings in sequence pattern")
+                raise DuplicateBindings(
+                    f"Duplicate bindings in sequence pattern: {sorted(b & result)}"
+                )
             result |= b
         return result
 
@@ -298,8 +323,9 @@ class MappingPattern(Pattern):
         for key, p in self.patterns.items():
             b = p.bindings(strict)
             if strict and b & result:
-                # TODO
-                raise ValueError("Duplicate bindings in mapping pattern")
+                raise DuplicateBindings(
+                    f"Duplicate bindings in mapping pattern: {sorted(b & result)}"
+                )
             result |= b
         return result
 
@@ -407,7 +433,9 @@ class InstancePattern(Pattern):
         for p in itertools.chain(self.posargs, self.kwargs.values()):
             b = p.bindings(strict)
             if strict and b & result:
-                raise ValueError("Duplicate bindings in instance pattern")
+                raise DuplicateBindings(
+                    f"Duplicate bindings in instance pattern: {sorted(b & result)}"
+                )
             result |= b
         return result
 
@@ -437,7 +465,6 @@ class WalrusPattern(Pattern):
         result = self.pattern.bindings(strict)
         if self.name != "_":
             if strict and self.name in result:
-                # TODO
-                raise ValueError("Duplicate bindings in walrus pattern")
+                raise DuplicateBindings("Duplicate bindings in walrus pattern")
             result |= {self.name}
         return result

@@ -193,7 +193,7 @@ def test_bindings():
 
     p = AlternativesPattern([VariablePattern("a"), ConstantPattern("a")])
     assert p.bindings(False) == {"a"}
-    with pytest.raises(Exception):
+    with pytest.raises(InconsistentBindings):
         p.bindings()
 
     p = AnnotatedPattern(VariablePattern("a"), int)
@@ -204,7 +204,7 @@ def test_bindings():
 
     p = SequencePattern([VariablePattern("a"), VariablePattern("a")])
     assert p.bindings(False) == {"a"}
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateBindings):
         p.bindings()
 
     p = MappingPattern({"k": VariablePattern("a"), "l": VariablePattern("b")})
@@ -212,7 +212,7 @@ def test_bindings():
 
     p = MappingPattern({"k": VariablePattern("a"), "l": VariablePattern("a")})
     assert p.bindings(False) == {"a"}
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateBindings):
         p.bindings()
 
     p = InstancePattern(MyClass, [VariablePattern("x")], {"y": VariablePattern("y")})
@@ -220,19 +220,19 @@ def test_bindings():
 
     p = InstancePattern(MyClass, [VariablePattern("x"), VariablePattern("x")], {})
     assert p.bindings(False) == {"x"}
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateBindings):
         p.bindings()
 
     p = InstancePattern(
         MyClass, [], {"x": VariablePattern("x"), "y": VariablePattern("x")}
     )
     assert p.bindings(False) == {"x"}
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateBindings):
         p.bindings()
 
     p = InstancePattern(MyClass, [VariablePattern("x")], {"y": VariablePattern("x")})
     assert p.bindings(False) == {"x"}
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateBindings):
         p.bindings()
 
     p = WalrusPattern("a", VariablePattern("b"))
@@ -240,5 +240,5 @@ def test_bindings():
 
     p = WalrusPattern("a", VariablePattern("a"))
     assert p.bindings(False) == {"a"}
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateBindings):
         p.bindings()
