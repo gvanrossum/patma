@@ -916,9 +916,7 @@ This PEP is fully backwards compatible.
 Reference Implementation
 ========================
 
-None yet. If there will be a general positive attitude towards the PEP, we
-will start working on implementation soon to iron out possible corner cases
-before acceptance.
+A CPython implementation is `currently under development <https://github.com/python/cpython/compare/master...brandtbucher:patma>`_.
 
 
 .. _rejected ideas:
