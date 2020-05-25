@@ -435,7 +435,8 @@ the form ``name := pattern``. For example::
           print(f"Zero length line at {x}, {y}")
 
 Note that the name pattern used in the named sub-pattern can be used in
-the match suite, or after the match statement. Another example::
+the match suite, or after the match statement.  However, the name will
+*only* be bound if the match succeeds.  Another example::
 
   match group_shapes():
       as [], [point := Point(x, y), *other]:
