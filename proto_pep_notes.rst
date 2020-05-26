@@ -242,14 +242,15 @@ building blocks. The following patterns are supported:
   snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
   the ``None`` case clause was taken. While matching against each case clause,
   a name should be bound at most once, having two name patterns with
-  coinciding names is an error. An exception is made for a special single
-  underscore name::
+  coinciding names is an error. An exception is made for the special single
+  underscore (``_``) name; in patterns, it's a wildcard that *never* binds::
 
     match data:
         as [x, x]:  # Error!
             ...
         as [_, _]:
             print("Some pair")
+            print(_)  # Error!
 
   Note: one can still match on a collection with equal items using `guards`_.
   Also, ``[x, y] | Point(x, y)`` is a legal pattern because the two
