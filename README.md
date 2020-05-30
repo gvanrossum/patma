@@ -14,4 +14,4 @@ This is heavily inspired by the work (in 2018) by
 The work has evolved quite a bit since then, though.  A fairly
 complete proposal can be found in [pep-9999.rst](pep-9999.rst).
 
-There are also some examples in [EXAMPLES file](EXAMPLES.md).
+There are also some examples in [EXAMPLES.md](EXAMPLES.md).
