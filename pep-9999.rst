@@ -1213,7 +1213,7 @@ practice before moving forward with some of these proposals.
 
 Note that in each case, the idea was judged to tbe a "two-way door",
 meaning that there should be no backwards-compatibility issues with adding
-these featurs later.
+these features later.
 
 One-off syntax variant
 ----------------------
