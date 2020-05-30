@@ -45,8 +45,8 @@ There are two possible conclusions that can be made from this information:
 * Handling of heterogeneous data (i.e. situations where a variable can take
   values of multiple types) is common in real world code.
 
-* Python doesn't have expressive ways of destructuring data (i.e. separating
-  the content of an object into multiple variables).
+* Python doesn't have expressive ways of destructuring object data (i.e.
+  separating the content of an object into multiple variables).
 
 This is in contrast with the opposite sides of both aspects:
 
@@ -63,7 +63,7 @@ This is in contrast with the opposite sides of both aspects:
 This PEP aims at improving the support for destructuring heterogeneous data
 by adding a dedicated syntactic support for it in the form of pattern matching.
 On very high level it is similar to regular expressions, but instead of
-matching string, it will be possible to match arbitrary Python objects.
+matching strings, it will be possible to match arbitrary Python objects.
 
 We believe this will improve both readability and reliability of relevant code.
 To illustrate the readability improvement, let us consider an actual example
@@ -93,21 +93,7 @@ the proposed code will work without any modifications to the definition of
           as _:
               return False
 
-See the `syntax`_ sections below for a more detailed specification. From
-the reliability perspective, experience shows that missing a case when dealing
-with a set of possible data values leads to hard to debug issues, thus forcing
-people to add safety asserts like this::
-
-  def get_first(data: Union[int, list[int]]) -> int:
-      if isinstance(data, list) and data:
-          return data[0]
-      elif isinstance(data, int):
-          return data
-      else:
-          assert False, "should never get here"
-
-With the proposed pattern matching such exhaustiveness checks will be added
-automatically.
+See the `syntax`_ sections below for a more detailed specification.
 
 Similarly to how constructing objects can be customized by a user-defined
 ``__init__()`` method, we propose that destructuring objects can be customized
@@ -152,7 +138,7 @@ A simplified approximate grammar for the proposed syntax is::
       | [NAME ":="] other_pattern ("|" other_pattern)*
   other_pattern:
       | literal_pattern
-      | reference_pattern
+      | constant_value_pattern
       | sequence_pattern
       | mapping_pattern
       | class_pattern
@@ -174,20 +160,24 @@ The proposed indentation structure is as following::
         as pattern_2:
             ...
 
+**TODO**: Change 'as' to 'case' once that decision is finalized.
+
 
 Match semantics
 ---------------
 
 The proposed large scale semantics for choosing the match is to choose first
 matching pattern and execute the corresponding suite. The remaining patterns
-are not tried. If there are no matching pattens, the ``else`` clause is
-executed. If the latter is absent, an instance of ``UnmatchedValue`` (proposed
-to be a subclass of ``ValueError``) is raised.
+are not tried. If there are no matching pattens, the statement 'falls
+through', and execution continues at the following statement.
 
-Essentially this is equivalent to a chain of ``if ... elif ... else`` except
-the default ``else`` clause is to raise an exception. Note that unlike for
-``switch`` statement, the pre-computed dispatch dictionary semantics does not
-apply here.
+Essentially this is equivalent to a chain of ``if ... elif ... else``
+statements. Note that unlike for the proposed ``switch`` statement, the
+pre-computed dispatch dictionary semantics does not apply here.
+
+There is no ``default`` or ``else`` case - instead the special wildcard
+``_`` can be used (see the section on `name_pattern`_) as a final
+'catch-all' pattern.
 
 Name bindings made during successful pattern match outlive the executed suite
 and can be used after the match statement. This follows the logic of other
@@ -210,143 +200,181 @@ Allowed patterns
 We introduce the proposed syntax gradually. Here we start from the main
 building blocks. The following patterns are supported:
 
-* **Literal pattern**, i.e. a simple literal like a string, a number, boolean,
-  or ``None``::
 
-    match number:
-        as 1:
-            print("Just one")
-        as 2:
-            print("A couple")
+.. _literal_pattern:
 
-  Literal pattern uses equality with literal on the right hand side, so that
-  in the above example ``number == 1`` and then possibly ``number == 2`` will
-  be evaluated. Note that ``float`` and ``complex`` numbers are not allowed
-  (due to their trickiness with imprecise representation and rounding). Also,
-  although technically negative numbers are represented by an unary operation
-  expression, they are considered literals for the purpose of pattern matching.
-  Raw strings and byte strings are supported. F-strings are not allowed
-  (since in general they are not really literals).
+Literal Pattern
+~~~~~~~~~~~~~~~
 
-* **Name pattern**, that serves as an assignment target for the matched
-  expression::
+A literal pattern consists of a simple literal like a string, a number,
+boolean, or ``None``::
 
-    match greeting:
-        as None:
-            print("Hello!")
-        as name:
-            print(f"Hi {name}!")
+  match number:
+      as 1:
+          print("Just one")
+      as 2:
+          print("A couple")
 
-  A name pattern always succeeds. A name pattern appearing in a scope makes
-  the name local to that scope. For example, using ``name`` after the above
-  snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
-  the ``None`` case clause was taken. While matching against each case clause,
-  a name should be bound at most once, having two name patterns with
-  coinciding names is an error. An exception is made for the special single
-  underscore (``_``) name; in patterns, it's a wildcard that *never* binds::
+Literal pattern uses equality with literal on the right hand side, so that
+in the above example ``number == 1`` and then possibly ``number == 2`` will
+be evaluated. Note that ``float`` and ``complex`` numbers are not allowed
+(due to their trickiness with imprecise representation and rounding). Also,
+although technically negative numbers are represented by an unary operation
+expression, they are considered literals for the purpose of pattern matching.
+Raw strings and byte strings are supported. F-strings are not allowed
+(since in general they are not really literals).
 
-    match data:
-        as [x, x]:  # Error!
-            ...
-        as [_, _]:
-            print("Some pair")
-            print(_)  # Error!
 
-  Note: one can still match on a collection with equal items using `guards`_.
-  Also, ``[x, y] | Point(x, y)`` is a legal pattern because the two
-  alternatives are never matched at the same time.
+.. _name_pattern:
 
-* **Reference pattern** is used to match against constants and enum values.
-  Every dotted name in a pattern is looked up using normal Python name
-  resolution rules, and the value is used for compared by equality with
-  the matching expression (same as for literals). As a special case to avoid
-  ambiguity with name patterns, simple names must be prefixed with a dot to be
-  considered a reference::
+Name Pattern
+~~~~~~~~~~~~
 
-    from enum import Enum
+A name pattern serves as an assignment target for the matched expression::
 
-    class Color(Enum):
-        BLACK = 1
-        RED = 2
+  match greeting:
+      as None:
+          print("Hello!")
+      as name:
+          print(f"Hi {name}!")
 
-    BLACK = 1
-    RED = 2
+A name pattern always succeeds. A name pattern appearing in a scope makes
+the name local to that scope. For example, using ``name`` after the above
+snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
+the ``None`` case clause was taken. While matching against each case clause,
+a name should be bound at most once, having two name patterns with
+coinciding names is an error. An exception is made for the special single
+underscore (``_``) name; in patterns, it's a wildcard that *never* binds::
 
-    match color:
-        as .BLACK | Color.BLACK:
-            print("Black suits every color")
-        as BLACK:  # This will just assign a new value to BLACK.
-            ...
+  match data:
+      as [x, x]:  # Error!
+          ...
+      as [_, _]:
+          print("Some pair")
+          print(_)  # Error!
 
-  Note: the leading dot can be omitted if the name is already dotted, but
-  adding it is not prohibited, so ``.Color.BLACK`` is same as ``Color.BLACK``.
-  See `rejected ideas`_ for other syntactic alternatives that were considered
-  for reference pattern.
+Note: one can still match on a collection with equal items using `guards`_.
+Also, ``[x, y] | Point(x, y)`` is a legal pattern because the two
+alternatives are never matched at the same time.
 
-* **Sequence pattern** follows the same semantics as sequence unpacking.
-  Each element can be an arbitrary pattern plus there may be at most one
-  ``*name`` pattern to catch all remaining items::
 
-    match collection:
-        as [1, x, *other]:
-            print(f"At least two elements, second is {x}")
-        as [1, [x, *other]]:
-            print("Got a nested sequence")
+.. _constant_value_pattern:
 
-  Note that to match a sequence pattern the target must be an instance of
-  ``collections.abc.Sequence``, and it cannot be any kind of string
-  (``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
-  on a specific collection class, see class pattern below.
+Constant Value Pattern
+~~~~~~~~~~~~~~~~~~~~~~
 
-* **Mapping pattern** is a generalization of iterable unpacking to mappings.
-  Its syntax is similar to dictionary display but each key and value are
-  patterns ``"{" (pattern ":" pattern)+ "}"``. A `**name`` pattern is also
-  allowed, to extract the remaining items.  Only literal and reference
-  patterns are allowed in key positions::
+This is used to match against constants and enum values.
+Every dotted name in a pattern is looked up using normal Python name
+resolution rules, and the value is used for compared by equality with
+the matching expression (same as for literals). As a special case to avoid
+ambiguity with name patterns, simple names must be prefixed with a dot to be
+considered a reference::
 
-    import constants
+  from enum import Enum
 
-    match config:
-        as {"route" | "Route": route}:
-            process_route(route)
-        as {constants.DEFAULT_PORT: sub_config, **rest}:
-            process_config(sub_config, rest)
+  class Color(Enum):
+      BLACK = 1
+      RED = 2
 
-  The target must be an instance of ``collections.abc.Mapping``.
-  Extra keys in the target are ignored even if ``**rest`` is not present.
-  This is different from
-  sequence pattern, where extra items will cause a match to fail. But mappings
-  are actually different from sequences: they have natural structural
-  sub-typing behavior, i.e., passing a dictionary with extra keys somewhere
-  will likely just work.
+  BLACK = 1
+  RED = 2
 
-* **Class pattern** provides support for destructuring arbitrary objects.
-  There are two possible ways of matching on object attributes: by position
-  like ``Point(1, 2)``, and by name like ``User(id=id, name="Guest")``. These
-  two can be combined, but positional match cannot follow a match by name.
-  Each item in a class pattern can be an arbitrary pattern. A simple
-  example::
+  match color:
+      as .BLACK | Color.BLACK:
+          print("Black suits every color")
+      as BLACK:  # This will just assign a new value to BLACK.
+          ...
 
-    match shape:
-        as Point(x, y):
-            ...
-        as Rectangle(x0, y0, x1, y1, painted=True):
-            ...
+Note: the leading dot can be omitted if the name is already dotted, but
+adding it is not prohibited, so ``.Color.BLACK`` is same as ``Color.BLACK``.
+See `rejected ideas`_ for other syntactic alternatives that were considered
+for constant value pattern.
 
-  Whether a match succeeds or not is determined by calling a special
-  ``__match__()`` method on the class named in the pattern
-  (``Point`` and ``Rectangle`` in the example),
-  with the value being matched (``shape``) as the only argument.
-  If the method returns ``None``, the match fails, otherwise the
-  match continues w.r.t. attributes of the returned proxy object, see details
-  in `runtime`_ section.
 
-  This PEP only fully specifies the behavior of ``__match__()`` for ``object``
-  and some builtin and standard library classes, custom classes are only
-  required to follow the protocol specified in `runtime`_ section. After all,
-  the authors of a class know best how to "revert" the logic of the
-  ``__init__()`` they wrote. The runtime will then chain these calls to allow
-  matching against arbitrarily nested patterns.
+.. _sequence_pattern:
+
+Sequence Pattern
+~~~~~~~~~~~~~~~~
+
+A sequence pattern follows the same semantics as sequence unpacking.
+Each element can be an arbitrary pattern plus there may be at most one
+``*name`` pattern to catch all remaining items::
+
+  match collection:
+      as [1, x, *other]:
+          print(f"At least two elements, second is {x}")
+      as [1, [x, *other]]:
+          print("Got a nested sequence")
+
+Note that to match a sequence pattern the target must be an instance of
+``collections.abc.Sequence``, and it cannot be any kind of string
+(``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
+on a specific collection class, see class pattern below.
+
+**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+
+
+.. _mapping_pattern:
+
+Mapping Pattern
+~~~~~~~~~~~~~~~
+
+Mapping pattern is a generalization of iterable unpacking to mappings.
+Its syntax is similar to dictionary display but each key and value are
+patterns ``"{" (pattern ":" pattern)+ "}"``. A ``**name`` pattern is also
+allowed, to extract the remaining items.  Only literal and constant value
+patterns are allowed in key positions::
+
+  import constants
+
+  match config:
+      as {"route" | "Route": route}:
+          process_route(route)
+      as {constants.DEFAULT_PORT: sub_config, **rest}:
+          process_config(sub_config, rest)
+
+The target must be an instance of ``collections.abc.Mapping``.
+Extra keys in the target are ignored even if ``**rest`` is not present.
+This is different from sequence pattern, where extra items will cause a
+match to fail. But mappings are actually different from sequences: they
+have natural structural sub-typing behavior, i.e., passing a dictionary
+with extra keys somewhere will likely just work.
+
+**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+
+
+.. _class_pattern:
+
+Class Pattern
+~~~~~~~~~~~~~
+
+A class pattern provides support for destructuring arbitrary objects.
+There are two possible ways of matching on object attributes: by position
+like ``Point(1, 2)``, and by name like ``User(id=id, name="Guest")``. These
+two can be combined, but positional match cannot follow a match by name.
+Each item in a class pattern can be an arbitrary pattern. A simple
+example::
+
+  match shape:
+      as Point(x, y):
+          ...
+      as Rectangle(x0, y0, x1, y1, painted=True):
+          ...
+
+Whether a match succeeds or not is determined by calling a special
+``__match__()`` method on the class named in the pattern
+(``Point`` and ``Rectangle`` in the example),
+with the value being matched (``shape``) as the only argument.
+If the method returns ``None``, the match fails, otherwise the
+match continues w.r.t. attributes of the returned proxy object, see details
+in `runtime`_ section.
+
+This PEP only fully specifies the behavior of ``__match__()`` for ``object``
+and some builtin and standard library classes, custom classes are only
+required to follow the protocol specified in `runtime`_ section. After all,
+the authors of a class know best how to "revert" the logic of the
+``__init__()`` they wrote. The runtime will then chain these calls to allow
+matching against arbitrarily nested patterns.
 
 
 Combining multiple patterns
@@ -449,48 +477,6 @@ Technically, most such examples can be rewritten using guards and/or nested
 match statements, but this will be less readable and/or will produce less
 efficient code. Essentially, most of the arguments in PEP 572 apply here
 equally.
-
-
-One-off matches
----------------
-
-While inspecting some code-bases that may benefit the most from the proposed
-syntax, it was found that single clause matches would be used relatively often,
-mostly for various special-casing. In other languages this is supported in
-the form of one-off matches. We propose to support such one-off matches too::
-
-  if match value as pattern [and guard]:
-      ...
-
-as equivalent to the following expansion::
-
-  match value:
-      as pattern [if guard]:
-          ...
-      as _:
-          pass  # Note: not raising UnmatchedValue exception here
-
-There will be no ``elif match`` statements allowed. One-off match is special
-case of ``match`` statement, not a special case of an ``if`` statement.
-Similarly, ``if not match`` is not allowed, since ``match ... as ...`` is not
-an expression.
-
-To illustrate how this will benefit readability, consider this (slightly
-simplified) snippet from real code::
-
-  if isinstance(node, CallExpr):
-      if (isinstance(node.callee, NameExpr) and len(node.args) == 1 and
-              isinstance(node.args[0], NameExpr)):
-          call = node.callee.name
-          arg = node.args[0].name
-          ...  # Continue special-casing 'call' and 'arg'
-  ...  # Follow with common code
-
-This can be rewritten in a more straightforward way as::
-
-  if match node as CallExpr(callee=NameExpr(name=call), args=[NameExpr(name=arg)]):
-      ...  # Continue special-casing 'call' and 'arg'
-  ...  # Follow with common code
 
 
 .. _runtime:
@@ -688,9 +674,23 @@ Static checkers specification
 Exhaustiveness checks
 ---------------------
 
+From a reliability perspective, experience shows that missing a case when
+dealing with a set of possible data values leads to hard to debug issues,
+thus forcing people to add safety asserts like this::
+
+  def get_first(data: Union[int, list[int]]) -> int:
+      if isinstance(data, list) and data:
+          return data[0]
+      elif isinstance(data, int):
+          return data
+      else:
+          assert False, "should never get here"
+
 PEP 484 specifies that static type checkers should support exhaustiveness in
 conditional checks with respect to enum values. PEP 586 later generalized this
-requirement to literal types. This PEP further generalizes this requirement to
+requirement to literal types.
+
+This PEP further generalizes this requirement to
 arbitrary patterns. A typical situation where this applies is matching an
 expression with a union type::
 
@@ -848,8 +848,8 @@ Note about constants
 
 The fact that name pattern is always an assignment target may create unwanted
 consequences when a user by mistake tries to "match" a value against
-a constant instead of using the reference pattern. As a result, at runtime
-such match will always succeed and moreover override the value of
+a constant instead of using the constant value pattern. As a result, at
+runtime such match will always succeed and moreover override the value of
 the constant. It is important therefore that static type checkers warn about
 such situations. For example::
 
@@ -952,9 +952,6 @@ decided not to do this because inspection of real-life potential use cases
 showed that in vast majority of cases destructuring is related to an ``if``
 condition. Also many of those are grouped in a series of exclusive choices.
 
-Note however that single ``if`` condition still appears relatively often, this
-is why we propose to allow one-off matches.
-
 
 Make it an expression
 ---------------------
@@ -1000,6 +997,8 @@ case clause:
 * It is already a hard keyword, so we would need only one soft keyword instead
   of two.
 
+**TODO**: Re-write this section once a final decision is made.
+
 
 Use a flat indentation scheme
 -----------------------------
@@ -1009,7 +1008,7 @@ every case clause would not be indented with respect to the initial ``match``
 part::
 
   match expression:
-  as patter_1:
+  as pattern_1:
       ...
   as pattern_2:
       ...
@@ -1021,8 +1020,8 @@ simple-minded code editors. Finally, the horizontal space issue can be
 alleviated by allowing "half-indent" (i.e. two spaces instead of four) for match statements.
 
 
-Alternatives for reference pattern
-----------------------------------
+Alternatives for constant value pattern
+---------------------------------------
 
 This is probably the trickiest item. Matching against some pre-defined
 constants is very common, but also dynamic nature of Python makes it ambiguous
@@ -1150,6 +1149,9 @@ don't propose ``while match`` construct present in some languages with pattern
 matching, since although it may be handy, it will likely be used rarely.
 Finally, ``while match`` is easy to add later.
 
+**TODO**: Need to re-write this paragraph to remove references to one-off
+matches which are no longer part of the spec.
+
 
 Send some pattern context to ``__match__()`` method
 ---------------------------------------------------
@@ -1181,6 +1183,105 @@ support for customization in user-defined classes. There is however a big
 downside to this: it will make basic implementation of this method quite
 tedious. Also, there will be actual performance penalty if user does not treat
 pattern object properly.
+
+
+Check exhaustiveness at runtime
+-------------------------------
+
+The question is what to do if no case clause has a matching pattern, and
+there is no default case. An earlier version of the proposal specified that
+the behavior in this case would be to throw an exception rather than
+silently falling through.
+
+The arguments back and forth were many, but in the end the EIBTI (Explicit
+Is Better Than Implicit) argument won out: it's better to have the programmer
+explicitly throw an exception if that is the behavior they want.
+
+For cases such as sealed classes and enums, where the patterns are all known
+to be members of a discrete set, `static checkers`_ can warn about missing
+patterns.
+
+
+Deferred Ideas
+==============
+
+There were a number of proposals to extend the matching syntax that we
+decided to postpone for possible future PEP. These fall into the realm of
+"cool idea but not essential", and it was felt that it might be better to
+acquire some real-world data on how the match statement will be used in
+practice before moving forward with some of these proposals.
+
+Note that in each case, the idea was judged to tbe a "two-way door",
+meaning that there should be no backwards-compatibility issues with adding
+these featurs later.
+
+One-off syntax variant
+----------------------
+
+While inspecting some code-bases that may benefit the most from the proposed
+syntax, it was found that single clause matches would be used relatively often,
+mostly for various special-casing. In other languages this is supported in
+the form of one-off matches. We propose to support such one-off matches too::
+
+  if match value as pattern [and guard]:
+      ...
+
+as equivalent to the following expansion::
+
+  match value:
+      as pattern [if guard]:
+          ...
+      as _:
+          pass  # Note: not raising UnmatchedValue exception here
+
+There will be no ``elif match`` statements allowed. One-off match is special
+case of ``match`` statement, not a special case of an ``if`` statement.
+Similarly, ``if not match`` is not allowed, since ``match ... as ...`` is not
+an expression.
+
+To illustrate how this will benefit readability, consider this (slightly
+simplified) snippet from real code::
+
+  if isinstance(node, CallExpr):
+      if (isinstance(node.callee, NameExpr) and len(node.args) == 1 and
+              isinstance(node.args[0], NameExpr)):
+          call = node.callee.name
+          arg = node.args[0].name
+          ...  # Continue special-casing 'call' and 'arg'
+  ...  # Follow with common code
+
+This can be rewritten in a more straightforward way as::
+
+  if match node as CallExpr(callee=NameExpr(name=call), args=[NameExpr(name=arg)]):
+      ...  # Continue special-casing 'call' and 'arg'
+  ...  # Follow with common code
+
+
+Algebraic matching of repeated names
+------------------------------------
+
+A technique occasionally seen in functional languages like Haskell is
+to use a match variable multiple times in the same pattern::
+
+  match value:
+      as Point(x, x):
+          print("Point is on a diagonal!")
+
+The idea here is that the first appearance of ``x`` would bind the value
+to the name, and subsequent occurrences would verify that the incoming
+value was equal to the value previously bound. If the value was not equal,
+the match would fail.
+
+However, there are a number of subtleties involved with mixing load-store
+semantics for name patterns. For the moment, we decided to make repeated
+use of names within the same pattern an error; we can always relax this
+restriction later without affecting backwards compatibility.
+
+Note that you **can** use the same name more than once in alternate choices::
+
+  match value:
+      as x | [x]:
+          # etc.
 
 
 References
