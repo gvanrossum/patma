@@ -176,7 +176,7 @@ statements. Note that unlike for the proposed ``switch`` statement, the
 pre-computed dispatch dictionary semantics does not apply here.
 
 There is no ``default`` or ``else`` case - instead the special wildcard
-``_`` can be used (see the section on `name_pattern`_s) as a final
+``_`` can be used (see the section on `name_pattern`_) as a final
 'catch-all' pattern.
 
 Name bindings made during successful pattern match outlive the executed suite
@@ -1198,7 +1198,7 @@ Is Better Than Implicit) argument won out: it's better to have the programmer
 explicitly throw an exception if that is the behavior they want.
 
 For cases such as sealed classes and enums, where the patterns are all known
-to be members of a discrete set, `static checkers`_ can warn of missing
+to be members of a discrete set, `static checkers`_ can warn about missing
 patterns.
 
 
