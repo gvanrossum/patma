@@ -234,7 +234,7 @@ Name Pattern
 A name pattern serves as an assignment target for the matched expression::
 
   match greeting:
-      as None:
+      as "":
           print("Hello!")
       as name:
           print(f"Hi {name}!")
@@ -242,10 +242,20 @@ A name pattern serves as an assignment target for the matched expression::
 A name pattern always succeeds. A name pattern appearing in a scope makes
 the name local to that scope. For example, using ``name`` after the above
 snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
-the ``None`` case clause was taken. While matching against each case clause,
-a name should be bound at most once, having two name patterns with
-coinciding names is an error. An exception is made for the special single
-underscore (``_``) name; in patterns, it's a wildcard that *never* binds::
+the ``""`` case clause was taken::
+
+  match greeting:
+      as "":
+          print("Hello!")
+      as name:
+          print(f"Hi {name}!")
+  if name == "Santa":      # <-- might raise UnboundLocalError
+      ...                  # but works fine if greeting was not empty
+
+While matching against each case clause, a name should be bound at most 
+once, having two name patterns with coinciding names is an error. An 
+exception is made for the special single underscore (``_``) name; in 
+patterns, it's a wildcard that *never* binds::
 
   match data:
       as [x, x]:  # Error!
