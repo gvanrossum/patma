@@ -1226,6 +1226,11 @@ the form of one-off matches. We propose to support such one-off matches too::
 
   if match value as pattern [and guard]:
       ...
+      
+or, alternatively, without the ``if``::
+
+  match value as pattern [if guard]:
+      ...
 
 as equivalent to the following expansion::
 
@@ -1235,10 +1240,10 @@ as equivalent to the following expansion::
       as _:
           pass  # Note: not raising UnmatchedValue exception here
 
-There will be no ``elif match`` statements allowed. One-off match is special
-case of ``match`` statement, not a special case of an ``if`` statement.
-Similarly, ``if not match`` is not allowed, since ``match ... as ...`` is not
-an expression.
+Even in the variant ``if match``, there will be no ``elif match`` statements 
+allowed. One-off match is special case of ``match`` statement, not a special 
+case of an ``if`` statement.  Similarly, ``if not match`` is not allowed, 
+since ``match ... as ...`` is not an expression.
 
 To illustrate how this will benefit readability, consider this (slightly
 simplified) snippet from real code::
