@@ -217,12 +217,11 @@ boolean, or ``None``::
 
 Literal pattern uses equality with literal on the right hand side, so that
 in the above example ``number == 1`` and then possibly ``number == 2`` will
-be evaluated. Note that ``float`` and ``complex`` numbers are not allowed
-(due to their trickiness with imprecise representation and rounding). Also,
-although technically negative numbers are represented by an unary operation
-expression, they are considered literals for the purpose of pattern matching.
-Raw strings and byte strings are supported. F-strings are not allowed
-(since in general they are not really literals).
+be evaluated. Note that although technically negative numbers 
+are represented by an unary operation expression, they are considered 
+literals for the purpose of pattern matching. Raw strings and byte strings 
+are supported. F-strings are not allowed (since in general they are not 
+really literals).
 
 
 .. _name_pattern:
@@ -233,7 +232,7 @@ Name Pattern
 A name pattern serves as an assignment target for the matched expression::
 
   match greeting:
-      as None:
+      as "":
           print("Hello!")
       as name:
           print(f"Hi {name}!")
@@ -241,10 +240,20 @@ A name pattern serves as an assignment target for the matched expression::
 A name pattern always succeeds. A name pattern appearing in a scope makes
 the name local to that scope. For example, using ``name`` after the above
 snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
-the ``None`` case clause was taken. While matching against each case clause,
-a name should be bound at most once, having two name patterns with
-coinciding names is an error. An exception is made for the special single
-underscore (``_``) name; in patterns, it's a wildcard that *never* binds::
+the ``""`` case clause was taken::
+
+  match greeting:
+      as "":
+          print("Hello!")
+      as name:
+          print(f"Hi {name}!")
+  if name == "Santa":      # <-- might raise UnboundLocalError
+      ...                  # but works fine if greeting was not empty
+
+While matching against each case clause, a name should be bound at most 
+once, having two name patterns with coinciding names is an error. An 
+exception is made for the special single underscore (``_``) name; in 
+patterns, it's a wildcard that *never* binds::
 
   match data:
       as [x, x]:  # Error!
@@ -265,7 +274,7 @@ Constant Value Pattern
 
 This is used to match against constants and enum values.
 Every dotted name in a pattern is looked up using normal Python name
-resolution rules, and the value is used for compared by equality with
+resolution rules, and the value is used for comparison by equality with
 the matching expression (same as for literals). As a special case to avoid
 ambiguity with name patterns, simple names must be prefixed with a dot to be
 considered a reference::
@@ -557,7 +566,7 @@ available names and their types should resemble the arguments to ``__init__``.
 Ambiguous matches
 -----------------
 
-Impossible and ambiguous matches are detected by the runtime and a special
+Impossible and ambiguous matches are detected at runtime and a special
 exception ``ImpossibleMatchError`` (proposed to be a subclass of ``TypeError``)
 will be raised. In addition to basic checks described in the previous
 subsection:
@@ -597,7 +606,7 @@ a class wants to disallow pattern matching against itself, it should define
 against such class.
 
 The above implementation means that by default only match by name will work,
-and classes should define provide ``__match_args__`` (e.g. as a class
+and classes should define ``__match_args__`` (e.g. as a class
 attribute) if they would like to support match by position. Also dataclasses
 will provide the match by position out of the box, see below.
 
@@ -626,7 +635,7 @@ builtins and standard library:
   ``__match_args_required__``.
 
 * For dataclasses the order of attributes in the generated ``__match_args__``
-  will the same as order of corresponding arguments in the generated
+  will be the same as order of corresponding arguments in the generated
   ``__init__()`` method. This includes the situations where attributes are
   inherited from a superclass.
 
@@ -930,8 +939,8 @@ This general idea was floating around for pretty long time, and many
 back and forth decisions were made. Here we summarize many alternative
 paths that were taken, but abandoned after all.
 
-Don't do this, patter matching is hard to learn
------------------------------------------------
+Don't do this, pattern matching is hard to learn
+------------------------------------------------
 
 In our opinion, the proposed pattern matching is not more difficult than
 adding ``isinstance()`` and ``getattr()`` to iterable unpacking. Also, we
@@ -1225,6 +1234,11 @@ the form of one-off matches. We propose to support such one-off matches too::
 
   if match value as pattern [and guard]:
       ...
+      
+or, alternatively, without the ``if``::
+
+  match value as pattern [if guard]:
+      ...
 
 as equivalent to the following expansion::
 
@@ -1234,10 +1248,10 @@ as equivalent to the following expansion::
       as _:
           pass  # Note: not raising UnmatchedValue exception here
 
-There will be no ``elif match`` statements allowed. One-off match is special
-case of ``match`` statement, not a special case of an ``if`` statement.
-Similarly, ``if not match`` is not allowed, since ``match ... as ...`` is not
-an expression.
+Even in the variant ``if match``, there will be no ``elif match`` statements 
+allowed. One-off match is special case of ``match`` statement, not a special 
+case of an ``if`` statement.  Similarly, ``if not match`` is not allowed, 
+since ``match ... as ...`` is not an expression.
 
 To illustrate how this will benefit readability, consider this (slightly
 simplified) snippet from real code::
