@@ -266,7 +266,7 @@ Constant Value Pattern
 
 This is used to match against constants and enum values.
 Every dotted name in a pattern is looked up using normal Python name
-resolution rules, and the value is used for compared by equality with
+resolution rules, and the value is used for comparison by equality with
 the matching expression (same as for literals). As a special case to avoid
 ambiguity with name patterns, simple names must be prefixed with a dot to be
 considered a reference::
@@ -558,7 +558,7 @@ available names and their types should resemble the arguments to ``__init__``.
 Ambiguous matches
 -----------------
 
-Impossible and ambiguous matches are detected by the runtime and a special
+Impossible and ambiguous matches are detected at runtime and a special
 exception ``ImpossibleMatchError`` (proposed to be a subclass of ``TypeError``)
 will be raised. In addition to basic checks described in the previous
 subsection:
@@ -598,7 +598,7 @@ a class wants to disallow pattern matching against itself, it should define
 against such class.
 
 The above implementation means that by default only match by name will work,
-and classes should define provide ``__match_args__`` (e.g. as a class
+and classes should define ``__match_args__`` (e.g. as a class
 attribute) if they would like to support match by position. Also dataclasses
 will provide the match by position out of the box, see below.
 
@@ -627,7 +627,7 @@ builtins and standard library:
   ``__match_args_required__``.
 
 * For dataclasses the order of attributes in the generated ``__match_args__``
-  will the same as order of corresponding arguments in the generated
+  will be the same as order of corresponding arguments in the generated
   ``__init__()`` method. This includes the situations where attributes are
   inherited from a superclass.
 
@@ -931,8 +931,8 @@ This general idea was floating around for pretty long time, and many
 back and forth decisions were made. Here we summarize many alternative
 paths that were taken, but abandoned after all.
 
-Don't do this, patter matching is hard to learn
------------------------------------------------
+Don't do this, pattern matching is hard to learn
+------------------------------------------------
 
 In our opinion, the proposed pattern matching is not more difficult than
 adding ``isinstance()`` and ``getattr()`` to iterable unpacking. Also, we
