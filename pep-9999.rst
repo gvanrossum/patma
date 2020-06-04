@@ -954,6 +954,17 @@ Python byte codes that have the same effect. In other words, all of the
 logic for testing instance types, sequence lengths, dictionary keys and
 so on are inlined in place of the ``match``.
 
+This is not the only possible strategy, nor is it necessarily the best.
+For example, the call to ``__match__`` could be memoized, especially
+if there are multiple instances of the same class type but with different
+arguments in a single match statement. It is also theoretically
+possible for a future implementation to process the case clauses in
+parallel using a decision tree rather than testing them one by one.
+
+For this reason, implementers of ``__match__`` should not make any
+assumptions about the number of times or the order in which ``__match__``
+is called.
+
 
 Backwards Compatibility
 =======================
