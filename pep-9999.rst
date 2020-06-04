@@ -90,11 +90,11 @@ the proposed code will work without any modifications to the definition of
 
   def is_tuple(node: Node) -> bool:
       match node:
-          as Node(children=[LParen(), RParen()]):
+          case Node(children=[LParen(), RParen()]):
               return True
-          as Node(children=[Leaf(value="("), Node(), Leaf(value=")")]):
+          case Node(children=[Leaf(value="("), Node(), Leaf(value=")")]):
               return True
-          as _:
+          case _:
               return False
 
 See the `syntax`_ sections below for a more detailed specification.
@@ -136,7 +136,7 @@ A simplified approximate grammar for the proposed syntax is::
       ...
       | match_stmt
   match_stmt: "match" expression ":" NEWLINE INDENT case_block+ DEDENT
-  case_block: "as" pattern ["if" expression] ":" block
+  case_block: "case" pattern ["if" expression] ":" block
   pattern:
       | NAME
       | [NAME ":="] other_pattern ("|" other_pattern)*
@@ -159,9 +159,9 @@ other positions as a variable or argument name.
 The proposed indentation structure is as following::
 
     match some_expression:
-        as pattern_1:
+        case pattern_1:
             ...
-        as pattern_2:
+        case pattern_2:
             ...
 
 **TODO**: Change 'as' to 'case' once that decision is finalized.
@@ -189,9 +189,9 @@ Python statements that can bind names, such as ``for`` loop and ``with``
 statement. For example::
 
   match shape:
-      as Point(x, y):
+      case Point(x, y):
           ...
-      as Rectangle(x, y, _, _):
+      case Rectangle(x, y, _, _):
           ...
   print(x, y)  # This works
 
@@ -214,9 +214,9 @@ A literal pattern consists of a simple literal like a string, a number,
 boolean, or ``None``::
 
   match number:
-      as 1:
+      case 1:
           print("Just one")
-      as 2:
+      case 2:
           print("A couple")
 
 Literal pattern uses equality with literal on the right hand side, so that
@@ -236,9 +236,9 @@ Name Pattern
 A name pattern serves as an assignment target for the matched expression::
 
   match greeting:
-      as "":
+      case "":
           print("Hello!")
-      as name:
+      case name:
           print(f"Hi {name}!")
 
 A name pattern always succeeds. A name pattern appearing in a scope makes
@@ -247,9 +247,9 @@ snippet may raise ``UnboundLocalError`` rather than ``NameError``, if
 the ``""`` case clause was taken::
 
   match greeting:
-      as "":
+      case "":
           print("Hello!")
-      as name:
+      case name:
           print(f"Hi {name}!")
   if name == "Santa":      # <-- might raise UnboundLocalError
       ...                  # but works fine if greeting was not empty
@@ -260,9 +260,9 @@ exception is made for the special single underscore (``_``) name; in
 patterns, it's a wildcard that *never* binds::
 
   match data:
-      as [x, x]:  # Error!
+      case [x, x]:  # Error!
           ...
-      as [_, _]:
+      case [_, _]:
           print("Some pair")
           print(_)  # Error!
 
@@ -293,9 +293,9 @@ considered a reference::
   RED = 2
 
   match color:
-      as .BLACK | Color.BLACK:
+      case .BLACK | Color.BLACK:
           print("Black suits every color")
-      as BLACK:  # This will just assign a new value to BLACK.
+      case BLACK:  # This will just assign a new value to BLACK.
           ...
 
 Note: the leading dot can be omitted if the name is already dotted, but
@@ -314,9 +314,9 @@ Each element can be an arbitrary pattern plus there may be at most one
 ``*name`` pattern to catch all remaining items::
 
   match collection:
-      as [1, x, *other]:
+      case [1, x, *other]:
           print(f"At least two elements, second is {x}")
-      as [1, [x, *other]]:
+      case [1, [x, *other]]:
           print("Got a nested sequence")
 
 Note that to match a sequence pattern the target must be an instance of
@@ -341,9 +341,9 @@ patterns are allowed in key positions::
   import constants
 
   match config:
-      as {"route" | "Route": route}:
+      case {"route" | "Route": route}:
           process_route(route)
-      as {constants.DEFAULT_PORT: sub_config, **rest}:
+      case {constants.DEFAULT_PORT: sub_config, **rest}:
           process_config(sub_config, rest)
 
 The target must be an instance of ``collections.abc.Mapping``.
@@ -369,9 +369,9 @@ Each item in a class pattern can be an arbitrary pattern. A simple
 example::
 
   match shape:
-      as Point(x, y):
+      case Point(x, y):
           ...
-      as Rectangle(x0, y0, x1, y1, painted=True):
+      case Rectangle(x0, y0, x1, y1, painted=True):
           ...
 
 Whether a match succeeds or not is determined by calling a special
@@ -399,28 +399,28 @@ Alternatives are tried from left to right and have short-circuit property,
 subsequent patterns are not tried if one matched. Examples::
 
   match something:
-      as 0 | 1 | 2:
+      case 0 | 1 | 2:
           print("Small number")
-      as [] | [_]:
+      case [] | [_]:
           print("A short sequence")
-      as str() | bytes():
+      case str() | bytes():
           print("Something string-like")
-      as _:
+      case _:
           print("Something else")
 
 The alternatives may bind variables, as long as each alternative binds
 the same set of variables (excluding ``_``).  For example::
 
   match something:
-      as 1 | x:  # Error!
+      case 1 | x:  # Error!
           ...
-      as x | 1:  # Error!
+      case x | 1:  # Error!
           ...
-      as one := [1] | two := [2]:  # Error!
+      case one := [1] | two := [2]:  # Error!
           ...
-      as Foo(arg=x) | Bar(arg=x):  # Valid, both arms bind 'x'
+      case Foo(arg=x) | Bar(arg=x):  # Valid, both arms bind 'x'
           ...
-      as [x] | x:  # Valid, both arms bind 'x'
+      case [x] | x:  # Valid, both arms bind 'x'
           ...
 
 
@@ -434,13 +434,13 @@ Each *top-level* pattern can be followed by a guard of the form
 evaluates to true value. For example::
 
   match input:
-      as [x, y] if x > MAX_INT and y > MAX_INT:
+      case [x, y] if x > MAX_INT and y > MAX_INT:
           print("Got a pair of large numbers")
-      as x if x > MAX_INT:
+      case x if x > MAX_INT:
           print("Got a large number")
-      as [x, y] if x == y:
+      case [x, y] if x == y:
           print("Got equal items")
-      as _:
+      case _:
           print("Not an outstanding input")
 
 If evaluating a guard raises an exception, it is propagated onwards rather
@@ -450,9 +450,9 @@ guard succeeds. So this will work::
   values = [0]
 
   match value:
-      as [x] if x:
+      case [x] if x:
           ...  # This is not executed
-      as _:
+      case _:
           ...
   print(x)  # This will print "0"
 
@@ -473,7 +473,7 @@ can be combined with arbitrary other pattern using named sub-patterns of
 the form ``name := pattern``. For example::
 
   match get_shape():
-      as Line(start := Point(x, y), end) if start == end:
+      case Line(start := Point(x, y), end) if start == end:
           print(f"Zero length line at {x}, {y}")
 
 Note that the name pattern used in the named sub-pattern can be used in
@@ -481,7 +481,7 @@ the match suite, or after the match statement.  However, the name will
 *only* be bound if the match succeeds.  Another example::
 
   match group_shapes():
-      as [], [point := Point(x, y), *other]:
+      case [], [point := Point(x, y), *other]:
           print(f"Got {point} in the second group")
           process_coordinates(x, y)
           ...
@@ -630,9 +630,9 @@ builtins and standard library:
   or mapping in general. For example::
 
     match collection:
-        as tuple([x, y, z]):
+        case tuple([x, y, z]):
             ...
-        as list([x, y, z]):
+        case list([x, y, z]):
             ...
 
 * Named tuples and dataclasses will have auto-generated ``__match_args__`` and
@@ -667,11 +667,11 @@ For example::
 
   p = Point(1, 2)
   match p:
-      as Point(x, y):  # This works
+      case Point(x, y):  # This works
           ...
-      as Point(coordinates=[1, 2]):  # Also works
+      case Point(coordinates=[1, 2]):  # Also works
           ...
-      as Point(_processed=False):  # Not included in allowed attributes, raises
+      case Point(_processed=False):  # Not included in allowed attributes, raises
           ...
 
 In addition, a systematic effort will be put into going through existing
@@ -709,11 +709,11 @@ expression with a union type::
 
   def classify(val: Union[int, Tuple[int, int], List[int]]) -> str:
       match val:
-          as [x, *other]:
+          case [x, *other]:
               return f"A list starting with {x}"
-          as [x, y] if x > 0 and y > 0:
+          case [x, y] if x > 0 and y > 0:
               return f"A pair of {x} and {y}"
-          as int(...):
+          case int(...):
               return f"Some integer"
           # Type-checking error: some cases unhandled.
 
@@ -738,9 +738,9 @@ and enum values are combined::
   account: Union[User, Admin]
 
   match account:
-      as Admin(name=name) | User(name=name, level=Level.PRO):
+      case Admin(name=name) | User(name=name, level=Level.PRO):
           ...
-      as User(level=Level.ADVANCED):
+      case User(level=Level.ADVANCED):
           ...
       # Type-checking error: basic user unhandled
 
@@ -808,11 +808,11 @@ checker can give a useful error message)::
 
   def dump(node: Node) -> str:
       match node:
-          as Assignment(target, value):
+          case Assignment(target, value):
               return f"{target} = {dump(value)}"
-          as Print(value):
+          case Print(value):
               return f"print({dump(value)})"
-          as Operation(left, op, right):
+          case Operation(left, op, right):
               return f"({dump(left)} {op} {dump(right)})"
 
 
@@ -826,7 +826,7 @@ match::
 
   queue: Union[Queue[int], Queue[str]]
   match queue:
-      as IntQueue():  # Type-checking error here
+      case IntQueue():  # Type-checking error here
           ...
 
 Note that the above snippet actually fails at runtime with the current
@@ -850,9 +850,9 @@ variables. For example::
   result: Union[Result[int], Result[str]]
 
   match result:
-      as Result(first=int()):
+      case Result(first=int()):
           ...  # Type of result is Result[int] here
-      as Result(other=["foo", "bar", *rest]):
+      case Result(other=["foo", "bar", *rest]):
           ...  # Type of result is Result[str] here
 
 
@@ -873,11 +873,11 @@ such situations. For example::
   value = 0
 
   match value:
-      as MAX_INT:  # Type-checking error here: cannot assign to final name
+      case MAX_INT:  # Type-checking error here: cannot assign to final name
           print("Got big number")
-      as .MAX_INT:  # This is OK
+      case .MAX_INT:  # This is OK
           print("Got big number")
-      as _:
+      case _:
           print("Something else")
 
 
@@ -912,11 +912,11 @@ a ``TypedDict`` type as specified by PEP 589. For example::
 
   def transform(expr: Expression) -> Statement:
       match expr:
-          as AssignmentExpression(target, value, **position):
+          case AssignmentExpression(target, value, **position):
               # Here position is TypedDict({"line": int, "column": int})
               # so the below call is safe
               return AssignmentStatement(f"{target}_tr", value, **position)
-          as AssignmentExpression(target, *rest):
+          case AssignmentExpression(target, *rest):
               # Here rest is tuple[Expression, int, int]
               # so the below call is a type-checking error
               return AssignmentStatement(*rest)
@@ -995,22 +995,25 @@ syntax highlighters, we decided not to use hard keyword for several reasons:
   meaning of the statement.
 
 
-Use ``case`` instead of ``as`` for case clauses
------------------------------------------------
+Use ``as`` or ``|`` instead of ``case`` for case clauses
+--------------------------------------------------------
 
-There are three arguments in favour of using ``as`` as a keyword to start each
-case clause:
+The pattern matching proposed here is a combination of multi-branch control
+flow (in line with ``switch`` in Alogol-derived languages or ``cond`` in Lisp)
+and object-deconstruction as found in functional languages.  While the proposed
+keyword ``case`` highlights the multi-branch aspect, alternative keywords such 
+as ``as`` would equally be possible, highlighting the deconstruction aspect.
+``as`` or ``with``, for instance, also have the advantage of already being 
+keywords in Python.  Other variants would use a symbol like ``|`` or ``=>``, 
+or go entirely without special marker.
 
-* It is a bit shorter so will save some keystrokes and horizontal space, which
-  may be important since this keyword will be repeated many times.
+However, since ``case`` as a keyword can only occur as a leading keyword inside
+a ``match`` statement, it is easy for a compiler to distinguish between its use
+as a keyword or as a variable.
 
-* Use of ``case`` is often associated with ``switch``, while using ``as`` is
-  closer to plain English formulation of the concept.
-
-* It is already a hard keyword, so we would need only one soft keyword instead
-  of two.
-
-**TODO**: Re-write this section once a final decision is made.
+Since Python is a statement-oriented language in the tradition of Algol, and as
+each composite statement starts with an identifying keyword, ``case`` seemed to
+be most in line with Python's style and traditions.
 
 
 Use a flat indentation scheme
@@ -1021,9 +1024,9 @@ every case clause would not be indented with respect to the initial ``match``
 part::
 
   match expression:
-  as pattern_1:
+  case pattern_1:
       ...
-  as pattern_2:
+  case pattern_2:
       ...
 
 The motivation is that although flat indentation saves some horizontal space,
@@ -1047,9 +1050,9 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-        as FOO:  # This would not be matched
+        case FOO:  # This would not be matched
             ...
-        as BAR:
+        case BAR:
             ...  # This would be matched
 
   This however can cause surprises and action at a distance if someone
@@ -1063,9 +1066,9 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-        as FOO:  # This would not be matched
+        case FOO:  # This would not be matched
             ...
-        as bar:
+        case bar:
             ...  # This would be matched
 
   This works well with the recommendations for naming constants from
@@ -1082,9 +1085,9 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-        as (FOO):  # This would not be matched
+        case (FOO):  # This would not be matched
             ...
-        as BAR:
+        case BAR:
             ...  # This would be matched
 
   This may be a viable option, but it can create some visual noise if used
@@ -1101,9 +1104,9 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-        as $FOO:  # This would not be matched
+        case $FOO:  # This would not be matched
             ...
-        as BAR:
+        case BAR:
             ...  # This would be matched
 
   The problem with this approach is that introducing a new syntax for such
@@ -1116,9 +1119,9 @@ with name patterns. Four other alternatives were considered:
     value = 0
 
     match value:
-        as FOO:  # This would not be matched
+        case FOO:  # This would not be matched
             ...
-        as $BAR:
+        case $BAR:
             ...  # This would be matched
 
   But the name patterns are more common in typical code, so having special
@@ -1176,7 +1179,7 @@ the full context. For example the below match would generate the following
 call::
 
   match expr:
-      as BinaryOp(left=Number(value=x), op=op, right=Number(value=y)):
+      case BinaryOp(left=Number(value=x), op=op, right=Number(value=y)):
           ...
 
   from types import PatternObject
@@ -1247,9 +1250,9 @@ or, alternatively, without the ``if``::
 as equivalent to the following expansion::
 
   match value:
-      as pattern [if guard]:
+      case pattern [if guard]:
           ...
-      as _:
+      case _:
           pass  # Note: not raising UnmatchedValue exception here
 
 Even in the variant ``if match``, there will be no ``elif match`` statements 
@@ -1282,7 +1285,7 @@ A technique occasionally seen in functional languages like Haskell is
 to use a match variable multiple times in the same pattern::
 
   match value:
-      as Point(x, x):
+      case Point(x, x):
           print("Point is on a diagonal!")
 
 The idea here is that the first appearance of ``x`` would bind the value
@@ -1298,7 +1301,7 @@ restriction later without affecting backwards compatibility.
 Note that you **can** use the same name more than once in alternate choices::
 
   match value:
-      as x | [x]:
+      case x | [x]:
           # etc.
 
 
