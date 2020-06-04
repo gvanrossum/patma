@@ -2,7 +2,11 @@ PEP: 9999
 Title: Pattern matching
 Version: $Revision$
 Last-Modified: $Date$
-Author: TBD
+Author: Brandt Bucher <brandtbucher@gmail.com>,
+        Tobias Kohn <kohnt@tobiaskohn.ch>,
+        Ivan Levkivskyi <levkivskyi@gmail.com>,
+        Guido van Rossum <guido@python.org>,
+        Talin <viridia@gmail.com>
 BDFL-Delegate:
 Discussions-To: Python-Dev <python-dev@python.org>
 Status: Draft
