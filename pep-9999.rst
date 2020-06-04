@@ -1252,8 +1252,6 @@ as equivalent to the following expansion::
   match value:
       case pattern [if guard]:
           ...
-      case _:
-          pass  # Note: not raising UnmatchedValue exception here
 
 Even in the variant ``if match``, there will be no ``elif match`` statements 
 allowed. One-off match is special case of ``match`` statement, not a special 
