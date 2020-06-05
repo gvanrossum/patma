@@ -221,10 +221,10 @@ boolean, or ``None``::
 
 Literal pattern uses equality with literal on the right hand side, so that
 in the above example ``number == 1`` and then possibly ``number == 2`` will
-be evaluated. Note that although technically negative numbers 
-are represented by an unary operation expression, they are considered 
-literals for the purpose of pattern matching. Raw strings and byte strings 
-are supported. F-strings are not allowed (since in general they are not 
+be evaluated. Note that although technically negative numbers
+are represented by an unary operation expression, they are considered
+literals for the purpose of pattern matching. Raw strings and byte strings
+are supported. F-strings are not allowed (since in general they are not
 really literals).
 
 
@@ -254,9 +254,9 @@ the ``""`` case clause was taken::
   if name == "Santa":      # <-- might raise UnboundLocalError
       ...                  # but works fine if greeting was not empty
 
-While matching against each case clause, a name should be bound at most 
-once, having two name patterns with coinciding names is an error. An 
-exception is made for the special single underscore (``_``) name; in 
+While matching against each case clause, a name should be bound at most
+once, having two name patterns with coinciding names is an error. An
+exception is made for the special single underscore (``_``) name; in
 patterns, it's a wildcard that *never* binds::
 
   match data:
@@ -922,6 +922,50 @@ a ``TypedDict`` type as specified by PEP 589. For example::
               return AssignmentStatement(*rest)
 
 
+Performance Considerations
+==========================
+
+Ideally, a ``match`` statement should have good runtime performance compared
+to an equivalent chain of if-statements. Although the history of programming
+languages is rife with examples of new features which increased engineer
+productivity at the expense of additional CPU cycles, it would be
+unfortunate if the benefits of ``match`` were counter-balanced by a significant
+overall decrease in runtime performance.
+
+That being said, because of the flexibility of ``match``, and the fact that
+it can be customized via the ``__match__`` callback, there is some overhead
+involved with calling these methods. Exactly how much cost this will entail
+will be implementation-dependent.
+
+In this design, an attempt has been made to avoid putting too much of a
+computational burden on the ``__match__`` method. In particular, earlier
+versions of the design required a custom matcher to completely re-implement
+most of the pattern-matching logic that would have been performed by the VM.
+The current design eschews this flexibility in favor of a simpler, faster
+custom match protocol.
+
+Although this PEP does not specify any particular implementation strategy,
+a few words about the prototype implementation and how it attempts to
+maximize performance are in order.
+
+Basically, the prototype implementation transforms all of the ``match``
+statement syntax into equivalent if/else blocks - or more accurately, into
+Python byte codes that have the same effect. In other words, all of the
+logic for testing instance types, sequence lengths, dictionary keys and
+so on are inlined in place of the ``match``.
+
+This is not the only possible strategy, nor is it necessarily the best.
+For example, the call to ``__match__`` could be memoized, especially
+if there are multiple instances of the same class type but with different
+arguments in a single match statement. It is also theoretically
+possible for a future implementation to process the case clauses in
+parallel using a decision tree rather than testing them one by one.
+
+For this reason, implementers of ``__match__`` should not make any
+assumptions about the number of times or the order in which ``__match__``
+is called.
+
+
 Backwards Compatibility
 =======================
 
@@ -1241,7 +1285,7 @@ the form of one-off matches. We propose to support such one-off matches too::
 
   if match value as pattern [and guard]:
       ...
-      
+
 or, alternatively, without the ``if``::
 
   match value as pattern [if guard]:
@@ -1253,9 +1297,9 @@ as equivalent to the following expansion::
       case pattern [if guard]:
           ...
 
-Even in the variant ``if match``, there will be no ``elif match`` statements 
-allowed. One-off match is special case of ``match`` statement, not a special 
-case of an ``if`` statement.  Similarly, ``if not match`` is not allowed, 
+Even in the variant ``if match``, there will be no ``elif match`` statements
+allowed. One-off match is special case of ``match`` statement, not a special
+case of an ``if`` statement.  Similarly, ``if not match`` is not allowed,
 since ``match ... as ...`` is not an expression.
 
 To illustrate how this will benefit readability, consider this (slightly
@@ -1301,6 +1345,39 @@ Note that you **can** use the same name more than once in alternate choices::
   match value:
       case x | [x]:
           # etc.
+
+
+Extended matching protocol
+--------------------------
+
+During the initial design discussions for this PEP, there were a lot of ideas
+thrown around about exotic custom matchers: ``IsInstance()``, ``InRange()``,
+``RegexMatchingGroup()`` and so on. In fact, part of the proposal included
+a new Python standard library module containing a menagerie of such diverse
+matchers.
+
+However, these matchers require a much more flexible and expensive custom
+matching protocol. In particular, it meant that the ``__match__`` method
+would need to have an additional "match signature" argument which would
+let it know exactly what values the pattern was seeking.
+
+Part of the argument against this more flexible protocol was that this
+match signature argument would be expensive to construct. Due to the dynamic
+nature of Python name binding, it could not be a constant, but would have
+to be created anew each time; and there is no guarantee that the ``__match__``
+function would even use this argument in its internal logic.
+
+The decision to postpone this feature came with a realization that this is
+not a one-way door; that an extended matching protocol could be added later,
+using a variety of techniques (such as defining a new custom match magic
+method with a different name) to signal that a class wished to opt-in
+in the extended protocol and that the VM should compute the extended signature
+object.
+
+The authors of this PEP expect that the ``match`` statement will evolve
+over time as usage patterns and idioms evolve, in a way similar to what
+other "multi-stage" PEPs have done in the past. When this happens, the
+extended matching issue can be revisited.
 
 
 References
