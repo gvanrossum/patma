@@ -101,6 +101,7 @@ def parse_expr(tokstream: TokenStream):
   result = parse_binop(tokstream)
   if tokstream.token_type != TokenType.END:
     tokstream.syntax(f"Unrecognized token")
+    return None
   elif result is None:
     tokstream.syntax(f"Expression expected")
   return result
