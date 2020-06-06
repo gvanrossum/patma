@@ -274,7 +274,7 @@ def simplify_expr(expr):
           return UnaryOp('-', right)
         case ['-', _, 0]:
           return left
-        case ['*', _, _] if left == 0 or right == 0:
+        case ['*', 0, _] | ['*', _, 0]:
           return 0
         case ['*', 1, _]:
           return right
