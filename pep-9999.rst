@@ -1207,7 +1207,7 @@ ambiguities:
   pre-build a jump table, but that's not generally possible in Python due
   to the fact that names can be dynamically rebound.
 
-Rather than creating a special-case syntax for ranges, it was decided to
+Rather than creating a special-case syntax for ranges, it was decided
 that allowing custom pattern objects (`InRange(0, 6)`) would be more flexible
 and less ambiguous; however those ideas have been postponed for the time
 being (See `deferred ideas`_).
