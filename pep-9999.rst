@@ -1246,7 +1246,7 @@ Since one-off matches have been placed in the 'deferred' category, this
 suggestion is moot.
 
 However, even with one-off matches, it was decided not to this. Mainly because
-these defeats the purpose of one-off matches as a complement to exhaustive full
+this defeats the purpose of one-off matches as a complement to exhaustive full
 matches. Similarly, we don't propose ``while match`` construct present in some
 languages with pattern matching, since although it may be handy, it will likely
 be used rarely.
@@ -1292,7 +1292,7 @@ Negative match patterns
 
 A negation of a match pattern using the operator ``!`` as a prefix.
 
-This was rejected because there is documented evidence that this feature
+This was rejected because there is documented evidence [8]_ that this feature
 is rarely useful (in languages which support it). It can also be simulated
 using guard conditions.
 
@@ -1476,11 +1476,10 @@ diverse kinds of custom matchers mentioned in the previous section - however,
 instead of using an extended matching protocol, it would be achieved by
 introducing an additional pattern type with its own syntax. This pattern type
 would accept two distinct sets of parameters: one set which consists of the
-actual parameters passed into the pattern object's constructor ("input"
-parameters), and another set representing the binding variables for the
-pattern ("output" parameters).
+actual parameters passed into the pattern object's constructor, and another
+set representing the binding variables for the pattern.
 
-The ``__match__`` method of these objects could use the input parameter
+The ``__match__`` method of these objects could use the constructor parameter
 values in deciding what was a valid match.
 
 This would allow patterns such as ``InRange<0, 6>(value)``, which would match
@@ -1488,8 +1487,8 @@ a number in the range 0..6 and assign the matched value to 'value'. Similarly,
 one could have a pattern which tests for the existince of a named group in
 a regular expression match result (different meaning of the word 'match').
 
-Although there is positive support for this idea, there was a lot of
-bikeshedding on the syntax (there are not a lot of attractive options available)
+Although there is some support for this idea, there was a lot of bikeshedding
+on the syntax (there are not a lot of attractive options available)
 and no clear consensus was reached, so it was decided that for now, this
 feature is not essential to the PEP.
 
@@ -1501,7 +1500,7 @@ Both of the previous ideas would be accompanied by a new Python standard
 library module which would contain a rich set of exotic and useful matchers.
 However, it it not really possible to implement such a library without
 adopting one of the extended pattern proposals given in the previous sections,
-so this idea also has to be deferred.
+so this idea is also deferred.
 
 
 References
@@ -1527,6 +1526,9 @@ References
 
 .. [7]
    https://github.com/gvanrossum/patma/blob/master/EXAMPLES.md
+
+.. [8]
+   https://dl.acm.org/doi/abs/10.1145/2480360.2384582
 
 
 Copyright
