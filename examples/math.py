@@ -1,62 +1,37 @@
+# Sample program that incorporates many uses of `match`.
 import re
 import sys
+import tokenize
 from enum import Enum
 from collections import namedtuple
 
-# A simple regex-based lexer
-TOKENS = re.compile(
-    "|".join([
-        r"(?P<ws>\s+)",
-        r"(?P<ident>[A-Za-z_][A-Za-z0-9_]*)",
-        r"(?P<number>[0-9]+(?:\.[0-9]*)?)",
-        r"(?P<oper>\+|\-|\*\*|\*|/|\(|\))"
-    ])
-)
-
-class TokenType(Enum):
-    """Enumeration representing the basic lexical token types."""
-    END = 0
-    IDENT = 1
-    NUMBER = 2
-    OPER = 3
-
+# Note: The tokenizer doesn't use `match`, skip this part - more interesting code below.
 class TokenStream:
     """Class representing a consumable stream of input tokens"""
     def __init__(self, input):
-        self.input = input # input text
-        self.token = (None, None) # token type and value
-        self.pos = 0 # scanning position
-        self.token_pos = 0 # position of previous token for error reporting
-        self.next() # prime the pump
+        lines = iter([input])  # We're only parsing a single line, not a whole file
+        self.stream = tokenize.generate_tokens(lambda: next(lines))
+        self.input = input  # original input text
+        self.next()  # prime the pump
 
     def next(self):
-        while self.pos < len(self.input):
-          self.token_pos = self.pos
-          m = TOKENS.match(self.input, self.pos)
-          if m:
-              self.pos = m.end()
-              if m.group("ws"):
-                  continue
-              elif value := m.group("ident"):
-                  self.token = (TokenType.IDENT, value)
-                  return
-              elif value := m.group("number"):
-                  self.token = (TokenType.NUMBER, value)
-                  return
-              elif value := m.group("oper"):
-                  self.token = (TokenType.OPER, value)
-                  return
-          else:
-              self.syntax("Unrecognized token")
-              return None
-
-        self.token = (TokenType.END, None)
+        while True:
+            try:
+                token = next(self.stream)
+                if token.type == tokenize.NEWLINE:
+                    continue
+                self.token = (token.type, token.string)
+                self.pos = token.start[1]
+                break
+            except StopIteration:
+                self.token = (tokenize.ENDMARKER, None)
+                break
 
     def syntax(self, msg):
         """Print a syntax error."""
-        print(f"{msg} at column {self.token_pos + 1}:")
+        print(f"{msg} at column {self.pos + 1}:")
         print(self.input)
-        print(" " * self.token_pos, "^", sep='')
+        print(" " * self.pos, "^", sep='')
         # TODO: Should probably raise here, and catch in main()
         return None
 
@@ -68,11 +43,12 @@ class TokenStream:
     def token_value(self):
         return self.token[1]
 
+# Note definition of __match_args__ to support sequence destructuring.
 class BinaryOp:
     """A binary operator expression."""
     __match_args__ = ["op", "left", "right"]
 
-    def __init__(self, op, left, right, precedence=0):
+    def __init__(self, op, left, right, precedence = 0):
         self.op = op
         self.left = left
         self.right = right
@@ -102,8 +78,8 @@ class VarExpr:
 def parse_expr(tokstream: TokenStream):
     """Parse an expression."""
     result = parse_binop(tokstream)
-    if tokstream.token_type != TokenType.END:
-        tokstream.syntax(f"Unrecognized token")
+    if tokstream.token_type != tokenize.ENDMARKER:
+        tokstream.syntax(f"Unrecognized token '{tokenize.tok_name[tokstream.token_type]}'")
         return None
     elif result is None:
         tokstream.syntax(f"Expression expected")
@@ -138,9 +114,9 @@ def parse_binop(tokstream: TokenStream):
             ]
 
     # Simple operator precedence parser
-    while tokstream.token_type != TokenType.END:
+    while tokstream.token_type != tokenize.ENDMARKER:
         token, value = tokstream.token
-        if token != TokenType.OPER:
+        if token != tokenize.OP:
             break
         elif value == "*" or value == "/":
             reduce(4)
@@ -167,7 +143,7 @@ def parse_binop(tokstream: TokenStream):
 
 def parse_unop(tokstream: TokenStream):
     """Parse unary operator."""
-    if tokstream.token_type == TokenType.OPER:
+    if tokstream.token_type == tokenize.OP:
         value = tokstream.token_value
         if value == "+" or value == "-":
             tokstream.next()
@@ -182,28 +158,28 @@ def parse_primary(tokstream: TokenStream):
   """Parse a primary expression."""
   token, value = tokstream.token
   match token:
-      case TokenType.END:
+      case tokenize.ENDMARKER:
           return None
-      case TokenType.IDENT:
+      case tokenize.NAME:
           tokstream.next()
           return VarExpr(value)
-      case TokenType.NUMBER:
+      case tokenize.NUMBER:
           tokstream.next()
           if "." in value:
               return float(value)
           else:
               return int(value)
-      case TokenType.OPER if value == "(":
+      case tokenize.LPAR:
           tokstream.next()
           expr = parse_binop(tokstream)
           if not expr:
               return None
           token, value = tokstream.token
-          if token == TokenType.OPER and value == ")":
+          if token == tokenize.RPAR:
               tokstream.next()
               return expr
           else:
-              print("Closing paren expected")
+              tokstream.syntax("Closing paren expected")
               return None
       case _:
           return None
@@ -232,12 +208,11 @@ def format_expr_tree(expr, indent=""):
     """Format an expression as a hierarchical tree."""
     match expr:
         case BinaryOp(op, left, right):
-            return f"{indent}({op}\n" + \
-                format_expr_tree(left, indent + "  ") + "\n" + \
-                format_expr_tree(right, indent + "  ") + ")"
+            return (f"{indent}({op}\n"
+                + format_expr_tree(left, indent + "  ") + "\n"
+                + format_expr_tree(right, indent + "  ") + ")")
         case UnaryOp(op, arg):
-            return f"{indent}({op}\n" + \
-                format_expr_tree(arg, indent + "  ") + ")"
+            return f"{indent}({op}\n" + format_expr_tree(arg, indent + "  ") + ")"
         case float() | int():
             return f"{indent}{expr}"
         case VarExpr(name):
@@ -318,7 +293,7 @@ def main():
             return
         tokstream = TokenStream(line)
         tok, command = tokstream.token
-        if tok == TokenType.IDENT:
+        if tok == tokenize.NAME:
             tokstream.next()
             if command == "quit" or command == "q":
                 break
