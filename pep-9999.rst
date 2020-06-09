@@ -164,8 +164,6 @@ The proposed indentation structure is as following::
         case pattern_2:
             ...
 
-**TODO**: Change 'as' to 'case' once that decision is finalized.
-
 
 Match semantics
 ---------------
@@ -1045,10 +1043,10 @@ Use ``as`` or ``|`` instead of ``case`` for case clauses
 The pattern matching proposed here is a combination of multi-branch control
 flow (in line with ``switch`` in Alogol-derived languages or ``cond`` in Lisp)
 and object-deconstruction as found in functional languages.  While the proposed
-keyword ``case`` highlights the multi-branch aspect, alternative keywords such 
+keyword ``case`` highlights the multi-branch aspect, alternative keywords such
 as ``as`` would equally be possible, highlighting the deconstruction aspect.
-``as`` or ``with``, for instance, also have the advantage of already being 
-keywords in Python.  Other variants would use a symbol like ``|`` or ``=>``, 
+``as`` or ``with``, for instance, also have the advantage of already being
+keywords in Python.  Other variants would use a symbol like ``|`` or ``=>``,
 or go entirely without special marker.
 
 However, since ``case`` as a keyword can only occur as a leading keyword inside
@@ -1077,7 +1075,12 @@ The motivation is that although flat indentation saves some horizontal space,
 it may look awkward to an eye of a Python programmer, because everywhere else
 colon is followed by an indent. This will also complicate life for
 simple-minded code editors. Finally, the horizontal space issue can be
-alleviated by allowing "half-indent" (i.e. two spaces instead of four) for match statements.
+alleviated by allowing "half-indent" (i.e. two spaces instead of four) for
+match statements.
+
+In sample programs using `match`, written as part of the development of this
+PEP, a noticable improvement in code brevity is observed, more than making up
+for the additional indentation level.
 
 
 Alternatives for constant value pattern
@@ -1174,6 +1177,42 @@ with name patterns. Four other alternatives were considered:
 In the end, these alternatives were rejected because of the mentioned drawbacks.
 
 
+Disallow float literals in patterns
+-----------------------------------
+
+Because of the inexactness of floats, an early version of this proposal
+did not allow floating-point constants to be used as match patterns. Part
+of the justification for this prohibition is that Rust does this.
+
+However, during implementation, it was discovered that distinguishing between
+float values and other types required extra code in the VM that would slow
+matches generally. Given that Python and Rust are very different languages
+with different user bases and underlying philosophies, it was felt that
+allowing float literals would not cause too much harm, and would be less
+surprising to users.
+
+
+Range matching patterns
+-----------------------
+
+This would allow patterns such as `1...6`. However, there are a host of
+ambiguities:
+
+* Is the range open, half-open, or closed? (I.e. is `6` included in the
+  above example or not?)
+* Does the range match a single number, or a range object?
+* Range matching is often used for character ranges ('a'...'z') but that
+  won't work in Python since there's no character data type, just strings.
+* Range matching can be a significant performance optimization if you can
+  pre-build a jump table, but that's not generally possible in Python due
+  to the fact that names can be dynamically rebound.
+
+Rather than creating a special-case syntax for ranges, it was decided
+that allowing custom pattern objects (`InRange(0, 6)`) would be more flexible
+and less ambiguous; however those ideas have been postponed for the time
+being (See `deferred ideas`_).
+
+
 Use dispatch dict semantics for matches
 ---------------------------------------
 
@@ -1203,14 +1242,59 @@ form::
   else:
       ...
 
-It was decided not to this. Mainly because these defeats the purpose of
-one-off matches as a complement to exhaustive full matches. Similarly, we
-don't propose ``while match`` construct present in some languages with pattern
-matching, since although it may be handy, it will likely be used rarely.
-Finally, ``while match`` is easy to add later.
+Since one-off matches have been placed in the 'deferred' category, this
+suggestion is moot.
 
-**TODO**: Need to re-write this paragraph to remove references to one-off
-matches which are no longer part of the spec.
+However, even with one-off matches, it was decided not to this. Mainly because
+this defeats the purpose of one-off matches as a complement to exhaustive full
+matches. Similarly, we don't propose ``while match`` construct present in some
+languages with pattern matching, since although it may be handy, it will likely
+be used rarely.
+
+
+Use ``continue`` and ``break`` in case clauses.
+-----------------------------------------------
+
+Another rejected proposal was to define new meanings for ``continue``
+and ``break`` inside of ``match``, which would have the following behavior:
+
+* ``continue`` would exit the current case clause and continue matching
+  at the next case clause.
+* ``break`` would exit the match statement.
+
+However, there is a serious drawback to this proposal: if the ``match`` statement
+is nested inside of a loop, the meanings of ``continue`` and ``break`` are now
+changed. This may cause unexpected behavior during refactorings; also, an
+argument can be made that there are other means to get the same behavior (such
+as using guard conditions), and that in practice it's likely that the existing
+behavior of ``continue`` and ``break`` are far more useful.
+
+
+AND (``&``) patterns
+--------------------
+
+This proposal defines an OR-pattern (``|``) to match one of several alternates;
+why not also an AND-pattern (``&``)? Especially given that some other languages
+(F# for example) support this.
+
+However, it's not clear how useful this would be. The semantics for matching
+dictionaries, objects and sequences already incorporates an implicit 'and': all
+attributes and elements mentioned must be present for the match to succeed. Guard
+conditions can also support many of the use cases that a hypothetical 'and'
+operator would be used for.
+
+In the end, it was decided that this would make the syntax more complex without
+adding a significant benefit.
+
+
+Negative match patterns
+-----------------------
+
+A negation of a match pattern using the operator ``!`` as a prefix.
+
+This was rejected because there is documented evidence [8]_ that this feature
+is rarely useful (in languages which support it). It can also be simulated
+using guard conditions.
 
 
 Send some pattern context to ``__match__()`` method
@@ -1261,6 +1345,8 @@ For cases such as sealed classes and enums, where the patterns are all known
 to be members of a discrete set, `static checkers`_ can warn about missing
 patterns.
 
+
+.. _deferred ideas:
 
 Deferred Ideas
 ==============
@@ -1380,6 +1466,43 @@ other "multi-stage" PEPs have done in the past. When this happens, the
 extended matching issue can be revisited.
 
 
+Parameterized Matching Syntax
+-----------------------------
+
+(Also known as "Class Instance Matchers".)
+
+This is another variant of the "custom match classes" idea that would allow
+diverse kinds of custom matchers mentioned in the previous section - however,
+instead of using an extended matching protocol, it would be achieved by
+introducing an additional pattern type with its own syntax. This pattern type
+would accept two distinct sets of parameters: one set which consists of the
+actual parameters passed into the pattern object's constructor, and another
+set representing the binding variables for the pattern.
+
+The ``__match__`` method of these objects could use the constructor parameter
+values in deciding what was a valid match.
+
+This would allow patterns such as ``InRange<0, 6>(value)``, which would match
+a number in the range 0..6 and assign the matched value to 'value'. Similarly,
+one could have a pattern which tests for the existince of a named group in
+a regular expression match result (different meaning of the word 'match').
+
+Although there is some support for this idea, there was a lot of bikeshedding
+on the syntax (there are not a lot of attractive options available)
+and no clear consensus was reached, so it was decided that for now, this
+feature is not essential to the PEP.
+
+
+Pattern Utility Library
+-----------------------
+
+Both of the previous ideas would be accompanied by a new Python standard
+library module which would contain a rich set of exotic and useful matchers.
+However, it it not really possible to implement such a library without
+adopting one of the extended pattern proposals given in the previous sections,
+so this idea is also deferred.
+
+
 References
 ==========
 
@@ -1403,6 +1526,9 @@ References
 
 .. [7]
    https://github.com/gvanrossum/patma/blob/master/EXAMPLES.md
+
+.. [8]
+   https://dl.acm.org/doi/abs/10.1145/2480360.2384582
 
 
 Copyright
