@@ -20,7 +20,10 @@ class TokenStream:
                 token = next(self.stream)
                 if token.type == tokenize.NEWLINE:
                     continue
-                self.token = (token.type, token.string)
+                token_type = token.type
+                if token.string in ("(", ")"):
+                    token_type = tokenize.EXACT_TOKEN_TYPES[token.string]
+                self.token = (token_type, token.string)
                 self.pos = token.start[1]
                 break
             except StopIteration:
@@ -143,9 +146,8 @@ def parse_binop(tokstream: TokenStream):
 
 def parse_unop(tokstream: TokenStream):
     """Parse unary operator."""
-    if tokstream.token_type == tokenize.OP:
-        value = tokstream.token_value
-        if value == "+" or value == "-":
+    match tokstream.token:
+        case [tokenize.OP, value := "+"|"-"]:
             tokstream.next()
             arg = parse_unop(tokstream)
             if arg is None:
