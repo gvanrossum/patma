@@ -184,7 +184,7 @@ def parse_primary(tokstream: TokenStream):
       case _:
           return None
 
-def format_expr(expr, precedence = 0):
+def format_expr(expr, precedence=0):
     """Format an expression as a string."""
     match expr:
         case BinaryOp(op, left, right):
