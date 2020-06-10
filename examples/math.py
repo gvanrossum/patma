@@ -118,20 +118,18 @@ def parse_binop(tokstream: TokenStream):
 
     # Simple operator precedence parser
     while tokstream.token_type != tokenize.ENDMARKER:
-        token, value = tokstream.token
-        if token != tokenize.OP:
-            break
-        elif value == "*" or value == "/":
-            reduce(4)
-            tokstream.next()
-            opstack.append(OpStackEntry(value, 4))
-        elif value == "+" or value == "-":
-            reduce(3)
-            tokstream.next()
-            opstack.append(OpStackEntry(value, 3))
-        else:
+        match tokstream.token:
+            case [tokenize.OP, value := "*"|"/"]:
+                reduce(4)
+                tokstream.next()
+                opstack.append(OpStackEntry(value, 4))
+            case [tokenize.OP, value := "+"|"-"]:
+                reduce(3)
+                tokstream.next()
+                opstack.append(OpStackEntry(value, 3))
             # TODO: Support power
-            break
+            case _:
+                break
 
         # Parse the right-hand side
         arg1 = parse_unop(tokstream)
