@@ -380,6 +380,9 @@ If the method returns ``None``, the match fails, otherwise the
 match continues w.r.t. attributes of the returned proxy object, see details
 in `runtime`_ section.
 
+The named class must be a type (must inherit from ``type``), and cannot be
+a function or some other type of callable object.
+
 This PEP only fully specifies the behavior of ``__match__()`` for ``object``
 and some builtin and standard library classes, custom classes are only
 required to follow the protocol specified in `runtime`_ section. After all,
@@ -1227,31 +1230,6 @@ We can still experiment with possible performance optimizations in this
 direction if they will not cause semantic differences.
 
 
-Allow ``elif match`` and other one-offs
----------------------------------------
-
-There was an idea to allow multi-branch one-off matches of the following
-form::
-
-  if match value_1 as patter_1 [and guard_1]:
-      ...
-  elif match value_2 as pattern_2 [and guard_2]:
-      ...
-  elif match value_3 as pattern_3 [and guard_3]:
-      ...
-  else:
-      ...
-
-Since one-off matches have been placed in the 'deferred' category, this
-suggestion is moot.
-
-However, even with one-off matches, it was decided not to this. Mainly because
-this defeats the purpose of one-off matches as a complement to exhaustive full
-matches. Similarly, we don't propose ``while match`` construct present in some
-languages with pattern matching, since although it may be handy, it will likely
-be used rarely.
-
-
 Use ``continue`` and ``break`` in case clauses.
 -----------------------------------------------
 
@@ -1346,6 +1324,23 @@ to be members of a discrete set, `static checkers`_ can warn about missing
 patterns.
 
 
+Type annotations for pattern variables
+--------------------------------------
+
+The proposal was to combine patterns with type annotations::
+
+  match x:
+      case [a: int, b: str]: print(f"An int {a} and a string {b}:)
+      case [a: int, b: int, c: int]: print(f"Three ints", a, b, c)
+      ...
+
+This idea has a lot of problems. For one, the colon can only
+be used inside of brackets or parens, otherwise the syntax becomes
+ambiguous. And because of type erasure, generic types such as
+``list[int]`` cannot be distinguished as patterns (Python disallows
+``isinstance(x, list[int])``), leading to unexpected behavior.
+
+
 .. _deferred ideas:
 
 Deferred Ideas
@@ -1404,6 +1399,25 @@ This can be rewritten in a more straightforward way as::
   if match node as CallExpr(callee=NameExpr(name=call), args=[NameExpr(name=arg)]):
       ...  # Continue special-casing 'call' and 'arg'
   ...  # Follow with common code
+
+The one-off form is only meant to handle a single pattern case, and as such
+will not support `if`/`elif` chains::
+
+  if match value_1 as patter_1 [and guard_1]:
+      ...
+  elif match value_2 as pattern_2 [and guard_2]:
+      ...
+  elif match value_3 as pattern_3 [and guard_3]:
+      ...
+  else:
+      ...
+
+This defeats the purpose of one-off matches as a complement to exhaustive full
+matches - it's better and clearer to use a full match in this case.
+
+Similarly, we don't propose ``while match`` construct present in some languages
+with pattern matching, since although it may be handy, it will likely be used
+rarely.
 
 
 Algebraic matching of repeated names
