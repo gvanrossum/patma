@@ -349,7 +349,7 @@ patterns are allowed in key positions::
   import constants
 
   match config:
-      case {"route" | "Route": route}:
+      case {"route": route}:
           process_route(route)
       case {constants.DEFAULT_PORT: sub_config, **rest}:
           process_config(sub_config, rest)
@@ -363,6 +363,11 @@ with extra keys somewhere will likely just work.
 
 For this reason, ``**_`` is invalid in mapping patterns; it is always a no-op
 that can be removed without consequence.
+
+Matched key-value pairs must already be present in the mapping, and not created
+on-the-fly by ``__missing__`` or ``__getitem__``.  For example,
+``collections.defaultdict`` instances will only match patterns with keys that
+were already present when the ``match`` block was entered.
 
 
 .. _class_pattern:
