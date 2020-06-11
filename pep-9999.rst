@@ -222,8 +222,8 @@ in the above example ``number == 1`` and then possibly ``number == 2`` will
 be evaluated. Note that although technically negative numbers
 are represented by an unary operation expression, they are considered
 literals for the purpose of pattern matching.  Similarly, binary addition and
-subtraction are allowed in cases where a number had both real and imaginary
-parts.
+subtraction operators are allowed in cases where a number has both real and
+imaginary parts.
 
 Raw strings and byte strings
 are supported. F-strings are not allowed (since in general they are not
@@ -331,8 +331,8 @@ example:
 
 * ``[*_]`` matches a sequence of any length.
 * ``[_, _, *_]``, matches any sequence of length two or more.
-* ``["a", *_, "z"]`` matches any sequence that starts with ``"a"`` and ends with
-  ``"z"``.
+* ``["a", *_, "z"]`` matches any sequence of length two or more that starts with
+  ``"a"`` and ends with ``"z"``.
 
 
 .. _mapping_pattern:
@@ -361,8 +361,8 @@ match to fail. But mappings are actually different from sequences: they
 have natural structural sub-typing behavior, i.e., passing a dictionary
 with extra keys somewhere will likely just work.
 
-For this reason, ``**_`` is invalid in mapping patterns; it is always a no-op
-that can be removed without consequence.
+For this reason, ``**_`` is invalid in mapping patterns; it would always be a
+no-op that could be removed without consequence.
 
 Matched key-value pairs must already be present in the mapping, and not created
 on-the-fly by ``__missing__`` or ``__getitem__``.  For example,
@@ -549,8 +549,14 @@ following:
   positional sub-pattern is allowed to be passed to the call. Rather than being
   matched against any particular attribute on the proxy, it is instead matched
   against the proxy itself.  This creates default behavior that is useful and
-  intuitive for most objects: ``bool(False)`` matches ``False`` (but not ``0``),
-  and ``tuple([0, 1, 2])`` matches ``(0, 1, 2)`` (but not ``range(3)``).
+  intuitive for most objects:
+
+  * ``bool(False)`` matches ``False`` (but not ``0``).
+  * ``tuple([0, 1, 2])`` matches ``(0, 1, 2)`` (but not ``range(3)``).
+  * ``int(i)`` matches any ``int`` and binds it to the name ``i``.
+  * ``str("qwerty")`` matches the string ``"qwerty"`` (and won't attempt a
+    comparison with ``bytes`` objects, which could warn or raise if Python is
+    run with the ``-b`` or ``-bb`` options).
 
 * If there are more positional items than the length of ``__match_args__``, an
   ``ImpossibleMatchError`` is raised.
