@@ -545,7 +545,7 @@ following:
   with ``__match_args__ == ["x", "y"]``, is translated (approximately) into
   ``obj.x == 5 and obj.y == 8``.
 
-* When ``__match_args__`` is missing or ``None`` (as is the default), a single
+* When ``__match_args__`` is missing (as is the default) or ``None``, a single
   positional sub-pattern is allowed to be passed to the call. Rather than being
   matched against any particular attribute on the proxy, it is instead matched
   against the proxy itself.  This creates default behavior that is useful and
