@@ -5,7 +5,6 @@ import tokenize
 from enum import Enum
 from collections import namedtuple
 
-# Note: The tokenizer doesn't use `match`, skip this part - more interesting code below.
 class TokenStream:
     """Class representing a consumable stream of input tokens"""
     def __init__(self, input):
@@ -59,10 +58,7 @@ class BinaryOp:
         self.precedence = precedence
 
     def __repr__(self):
-        return f"{repr(self.left)} {self.op} {repr(self.right)}"
-
-    def __str__(self):
-        return f"{str(self.left)} {self.op} {str(self.right)}"
+        return f"({repr(self.left)} {self.op} {repr(self.right)})"
 
 class UnaryOp:
     """A unary operator expression."""
@@ -72,12 +68,18 @@ class UnaryOp:
         self.op = op
         self.arg = arg
 
+    def __repr__(self):
+        return f"({self.op} {repr(self.arg)})"
+
 class VarExpr:
     """A reference to a variable."""
     __match_args__ = ["name"]
 
     def __init__(self, name):
         self.name = name
+
+    def __repr__(self):
+        return self.name
 
 def parse_expr(tokstream: TokenStream):
     """Parse an expression."""
@@ -190,7 +192,7 @@ def format_expr(expr, precedence=0):
     match expr:
         case BinaryOp(op, left, right):
             result = \
-                f"{format_expr(left, expr.precedence)} {op} {format_expr(right, expr.precedence)}"
+                f"{format_expr(left, expr.precedence)} {op} {format_expr(right, expr.precedence+1)}"
             # Surround the result in parentheses if needed
             if precedence > expr.precedence:
                 return f"({result})"
