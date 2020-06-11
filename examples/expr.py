@@ -312,7 +312,10 @@ def main():
                 case "eval":
                     expr = parse_expr(tokstream)
                     if expr is not None:
-                        print(eval_expr(expr))
+                        try:
+                            print(eval_expr(expr))
+                        except ValueError as err:
+                            print(err)
                 case "simplify":
                     expr = parse_expr(tokstream)
                     if expr is not None:
