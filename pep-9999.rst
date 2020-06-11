@@ -1404,14 +1404,14 @@ of a ``match`` statement, not a special case of an ``if`` statement::
       ...
   elif match value_3 as pattern_3 [and guard_3]:  # Not allowed
       ...
-  else:
+  else:  # Also not allowed
       ...
 
 This would defeat the purpose of one-off matches as a complement to exhaustive
 full matches - it's better and clearer to use a full match in this case.
 
 Similarly, ``if not match`` would not be allowed, since ``match ... as ...`` is not
-an expression. Nor do we a propose ``while match`` construct present in some languages
+an expression. Nor do we propose a ``while match`` construct present in some languages
 with pattern matching, since although it may be handy, it will likely be used
 rarely.
 
