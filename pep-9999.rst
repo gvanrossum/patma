@@ -221,7 +221,11 @@ Literal pattern uses equality with literal on the right hand side, so that
 in the above example ``number == 1`` and then possibly ``number == 2`` will
 be evaluated. Note that although technically negative numbers
 are represented by an unary operation expression, they are considered
-literals for the purpose of pattern matching. Raw strings and byte strings
+literals for the purpose of pattern matching.  Similarly, binary addition and
+subtraction are allowed in cases where a number had both real and imaginary
+parts.
+
+Raw strings and byte strings
 are supported. F-strings are not allowed (since in general they are not
 really literals).
 
