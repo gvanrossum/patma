@@ -326,7 +326,13 @@ Note that to match a sequence pattern the target must be an instance of
 (``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
 on a specific collection class, see class pattern below.
 
-**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+The ``_`` wildcard can be starred to match sequences of varying lengths. For
+example:
+
+* ``[*_]`` matches a sequence of any length.
+* ``[_, _, *_]``, matches any sequence of length two or more.
+* ``["a", *_, "z"]`` matches any sequence that starts with ``"a"`` and ends with
+  ``"z"``.
 
 
 .. _mapping_pattern:
@@ -355,7 +361,8 @@ match to fail. But mappings are actually different from sequences: they
 have natural structural sub-typing behavior, i.e., passing a dictionary
 with extra keys somewhere will likely just work.
 
-**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+For this reason, ``**_`` is invalid in mapping patterns; it is always a no-op
+that can be removed without consequence.
 
 
 .. _class_pattern:
@@ -492,6 +499,8 @@ Technically, most such examples can be rewritten using guards and/or nested
 match statements, but this will be less readable and/or will produce less
 efficient code. Essentially, most of the arguments in PEP 572 apply here
 equally.
+
+``_`` is never a valid name to bind to in this context.
 
 
 .. _runtime:
