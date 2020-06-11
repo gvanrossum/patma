@@ -21,11 +21,10 @@ class TokenStream:
                 match [token.type, token.string]:
                     case [tokenize.NEWLINE, _]:
                         continue
-                    case [_, token_string := "("|")"]:
-                        token_type = tokenize.EXACT_TOKEN_TYPES[token_string]
-                    case [token_type, token_string]:
-                        pass
-                self.token = (token_type, token_string)
+                    case [tokenize.OP, "("|")"]:
+                        self.token = (tokenize.EXACT_TOKEN_TYPES[token.string], token.string)
+                    case _:
+                        self.token = (token.type, token.string)
                 self.pos = token.start[1]
                 break
             except StopIteration:
