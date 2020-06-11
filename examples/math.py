@@ -18,12 +18,13 @@ class TokenStream:
         while True:
             try:
                 token = next(self.stream)
-                if token.type == tokenize.NEWLINE:
-                    continue
-                token_type = token.type
-                if token.string in ("(", ")"):
-                    token_type = tokenize.EXACT_TOKEN_TYPES[token.string]
-                self.token = (token_type, token.string)
+                match [token.type, token.string]:
+                    case [tokenize.NEWLINE, _]:
+                        continue
+                    case [tokenize.OP, "("|")"]:
+                        self.token = (tokenize.EXACT_TOKEN_TYPES[token.string], token.string)
+                    case _:
+                        self.token = (token.type, token.string)
                 self.pos = token.start[1]
                 break
             except StopIteration:
