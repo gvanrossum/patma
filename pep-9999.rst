@@ -498,7 +498,7 @@ the form ``name := pattern``. For example::
 
 Note that the name pattern used in the named sub-pattern can be used in
 the match suite, or after the match statement.  However, the name will
-*only* be bound if the match succeeds.  Another example::
+*only* be bound if the sub-pattern succeeds.  Another example::
 
   match group_shapes():
       case [], [point := Point(x, y), *other]:
@@ -511,7 +511,7 @@ match statements, but this will be less readable and/or will produce less
 efficient code. Essentially, most of the arguments in PEP 572 apply here
 equally.
 
-``_`` is never a valid name to bind to in this context.
+``_`` is not a valid name here.
 
 
 .. _runtime:
