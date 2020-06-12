@@ -51,11 +51,18 @@ class BinaryOp:
     """A binary operator expression."""
     __match_args__ = ["op", "left", "right"]
 
-    def __init__(self, op, left, right, precedence = 0):
+    PRECEDENCE = {
+        '+': 3,
+        '-': 3,
+        '*': 4,
+        '/': 4,
+    }
+
+    def __init__(self, op, left, right):
         self.op = op
         self.left = left
         self.right = right
-        self.precedence = precedence
+        self.precedence = BinaryOp.PRECEDENCE[op]
 
     def __repr__(self):
         return f"({repr(self.left)} {self.op} {repr(self.right)})"
@@ -116,7 +123,7 @@ def parse_binop(tokstream: TokenStream):
         # Note: changing >= to > here makes operators right-associative.
         while len(opstack) > 2 and opstack[-2].precedence >= precedence:
             opstack[-3:] = [
-              BinaryOp(opstack[-2].op, opstack[-3], opstack[-1], opstack[-2].precedence)
+              BinaryOp(opstack[-2].op, opstack[-3], opstack[-1])
             ]
 
     # Simple operator precedence parser
@@ -199,7 +206,7 @@ def format_expr(expr, precedence=0):
             else:
                 return result
         case UnaryOp(op, arg):
-            return f"{op} {format_expr(arg, 0)}"
+            return f"{op}{format_expr(arg, 0)}"
         case VarExpr(name):
             return name
         case float() | int():
@@ -269,6 +276,8 @@ def simplify_expr(expr):
           match (op, arg):
               case ['+', _]:
                   return arg
+              case ['-', UnaryOp('-', arg2)]:
+                  return arg2
               case ['-', float() | int()]:
                   return -arg
               case _:
