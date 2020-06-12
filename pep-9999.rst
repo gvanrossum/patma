@@ -322,17 +322,19 @@ The initial name must not be ``_``, so these are invalid::
 Sequence Pattern
 ~~~~~~~~~~~~~~~~
 
-A sequence pattern follows the same semantics as sequence unpacking.
-Each element can be an arbitrary pattern plus there may be at most one
-``*name`` pattern to catch all remaining items::
+A sequence pattern follows the same semantics as unpacking assignment.
+Like unpacking assignment, both tuple-like and list-like syntax can be
+used, with identical semantics.  Each element can be an arbitrary
+pattern; there may also be at most one ``*name`` pattern to catch all
+remaining items::
 
   match collection:
-      case [1, x, *other]:
-          print(f"At least two elements, second is {x}")
-      case [1, [x, *other]]:
+      case (1, x):
+          print(f"Got 1 and a {x}")
+      case 1, (x, *other):
           print("Got a nested sequence")
 
-Note that to match a sequence pattern the target must be an instance of
+To match a sequence pattern the target must be an instance of
 ``collections.abc.Sequence``, and it cannot be any kind of string
 (``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
 on a specific collection class, see class pattern below.
@@ -341,7 +343,7 @@ The ``_`` wildcard can be starred to match sequences of varying lengths. For
 example:
 
 * ``[*_]`` matches a sequence of any length.
-* ``[_, _, *_]``, matches any sequence of length two or more.
+* ``(_, _, *_)``, matches any sequence of length two or more.
 * ``["a", *_, "z"]`` matches any sequence of length two or more that starts with
   ``"a"`` and ends with ``"z"``.
 
