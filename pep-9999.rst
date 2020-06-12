@@ -1006,6 +1006,46 @@ Backwards Compatibility
 This PEP is fully backwards compatible.
 
 
+Impacts on third-party tools
+============================
+
+There are a lot of tools in the Python ecosystem that operate on Python
+source code: linters, syntax highlighters, auto-formatters, and IDEs. These
+will all need to be updated to include awareness of the ``match`` statement.
+
+In general, these tools fall into one of two categories:
+
+**Shallow** parsers don't try to understand the full syntax of Python, but
+instead scan the source code for specific known patterns. IDEs, such as Visual
+Studio Code, Emacs and TextMate, tend to fall in this category, since frequently
+the source code is invalid while being edited, and a strict approach to parsing
+would fail.
+
+For these kinds of tools, adding knowledge of a new keyword is relatively
+easy, just an addition to a table, or perhaps modification of a regular
+expression.
+
+**Deep** parsers understand the complete syntax of Python. An example of this
+is the auto-formatter Black [9]_. A particular requirement with these kinds of
+tools is that they not only need to understand the syntax of the current version
+of Python, but older versions of Python as well.
+
+The ``match`` statement uses a soft keyword, and it is one of the first major
+Python features to take advantage of the capabilities of the new PEG parser. This
+means that third-party parsers which are not 'PEG-compatible' will have a hard
+time with the new syntax.
+
+It has been noted that a number of these third-party tools leverage common parsing
+libraries (Black for example uses a fork of the lib2to3 parser). It may be helpful
+to identify widely-used parsing libraries (such as parso [10]_ and libCST [11]_)
+and upgrade them to be PEG compatible.
+
+However, since this work would need to be done not only for the match statement,
+but for _any_ new Python syntax that leverages the capbilities of the PEG parser,
+it is considered out of scope for this PEP. (Although it is suggested that this
+would make a fine Summer of Code project.)
+
+
 Reference Implementation
 ========================
 
@@ -1573,6 +1613,15 @@ References
 
 .. [8]
    https://dl.acm.org/doi/abs/10.1145/2480360.2384582
+
+.. [9]
+   https://black.readthedocs.io/en/stable/
+
+.. [10]
+   https://github.com/davidhalter/parso
+
+.. [11]
+   https://github.com/Instagram/LibCST
 
 
 Copyright
