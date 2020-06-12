@@ -212,16 +212,26 @@ A literal pattern consists of a simple literal like a string, a number,
 boolean, or ``None``::
 
   match number:
+      case 0:
+          print("Nothing")
       case 1:
           print("Just one")
       case 2:
           print("A couple")
+      case -1:
+          print("One less than nothing")
+      case 1-1j:
+          print("Good luck with that...")
 
 Literal pattern uses equality with literal on the right hand side, so that
 in the above example ``number == 1`` and then possibly ``number == 2`` will
 be evaluated. Note that although technically negative numbers
-are represented by an unary operation expression, they are considered
-literals for the purpose of pattern matching. Raw strings and byte strings
+are represented using unary minus, they are considered
+literals for the purpose of pattern matching. Unary plus is not allowed.
+Binary plus and minus are allowed only to join a real number and an imaginary
+number to form a complex number, such as ``1+1j``.
+
+Raw strings and byte strings
 are supported. F-strings are not allowed (since in general they are not
 really literals).
 
@@ -322,7 +332,13 @@ Note that to match a sequence pattern the target must be an instance of
 (``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
 on a specific collection class, see class pattern below.
 
-**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+The ``_`` wildcard can be starred to match sequences of varying lengths. For
+example:
+
+* ``[*_]`` matches a sequence of any length.
+* ``[_, _, *_]``, matches any sequence of length two or more.
+* ``["a", *_, "z"]`` matches any sequence of length two or more that starts with
+  ``"a"`` and ends with ``"z"``.
 
 
 .. _mapping_pattern:
@@ -339,7 +355,7 @@ patterns are allowed in key positions::
   import constants
 
   match config:
-      case {"route" | "Route": route}:
+      case {"route": route}:
           process_route(route)
       case {constants.DEFAULT_PORT: sub_config, **rest}:
           process_config(sub_config, rest)
@@ -351,7 +367,13 @@ match to fail. But mappings are actually different from sequences: they
 have natural structural sub-typing behavior, i.e., passing a dictionary
 with extra keys somewhere will likely just work.
 
-**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+For this reason, ``**_`` is invalid in mapping patterns; it would always be a
+no-op that could be removed without consequence.
+
+Matched key-value pairs must already be present in the mapping, and not created
+on-the-fly by ``__missing__`` or ``__getitem__``.  For example,
+``collections.defaultdict`` instances will only match patterns with keys that
+were already present when the ``match`` block was entered.
 
 
 .. _class_pattern:
@@ -379,6 +401,8 @@ with the value being matched (``shape``) as the only argument.
 If the method returns ``None``, the match fails, otherwise the
 match continues w.r.t. attributes of the returned proxy object, see details
 in `runtime`_ section.
+
+The named class must inherit from ``type``.
 
 This PEP only fully specifies the behavior of ``__match__()`` for ``object``
 and some builtin and standard library classes, custom classes are only
@@ -476,7 +500,7 @@ the form ``name := pattern``. For example::
 
 Note that the name pattern used in the named sub-pattern can be used in
 the match suite, or after the match statement.  However, the name will
-*only* be bound if the match succeeds.  Another example::
+*only* be bound if the sub-pattern succeeds.  Another example::
 
   match group_shapes():
       case [], [point := Point(x, y), *other]:
@@ -488,6 +512,8 @@ Technically, most such examples can be rewritten using guards and/or nested
 match statements, but this will be less readable and/or will produce less
 efficient code. Essentially, most of the arguments in PEP 572 apply here
 equally.
+
+``_`` is not a valid name here.
 
 
 .. _runtime:
@@ -526,6 +552,16 @@ following:
   a pattern ``Point2D(5, 8)``, where ``Point2D.__match__()`` returns a proxy
   with ``__match_args__ == ["x", "y"]``, is translated (approximately) into
   ``obj.x == 5 and obj.y == 8``.
+
+* When ``__match_args__`` is missing (as is the default) or ``None``, a single
+  positional sub-pattern is allowed to be passed to the call. Rather than being
+  matched against any particular attribute on the proxy, it is instead matched
+  against the proxy itself.  This creates default behavior that is useful and
+  intuitive for most objects:
+
+  * ``bool(False)`` matches ``False`` (but not ``0``).
+  * ``tuple([0, 1, 2])`` matches ``(0, 1, 2)`` (but not ``range(3)``).
+  * ``int(i)`` matches any ``int`` and binds it to the name ``i``.
 
 * If there are more positional items than the length of ``__match_args__``, an
   ``ImpossibleMatchError`` is raised.
@@ -970,6 +1006,46 @@ Backwards Compatibility
 This PEP is fully backwards compatible.
 
 
+Impacts on third-party tools
+============================
+
+There are a lot of tools in the Python ecosystem that operate on Python
+source code: linters, syntax highlighters, auto-formatters, and IDEs. These
+will all need to be updated to include awareness of the ``match`` statement.
+
+In general, these tools fall into one of two categories:
+
+**Shallow** parsers don't try to understand the full syntax of Python, but
+instead scan the source code for specific known patterns. IDEs, such as Visual
+Studio Code, Emacs and TextMate, tend to fall in this category, since frequently
+the source code is invalid while being edited, and a strict approach to parsing
+would fail.
+
+For these kinds of tools, adding knowledge of a new keyword is relatively
+easy, just an addition to a table, or perhaps modification of a regular
+expression.
+
+**Deep** parsers understand the complete syntax of Python. An example of this
+is the auto-formatter Black [9]_. A particular requirement with these kinds of
+tools is that they not only need to understand the syntax of the current version
+of Python, but older versions of Python as well.
+
+The ``match`` statement uses a soft keyword, and it is one of the first major
+Python features to take advantage of the capabilities of the new PEG parser. This
+means that third-party parsers which are not 'PEG-compatible' will have a hard
+time with the new syntax.
+
+It has been noted that a number of these third-party tools leverage common parsing
+libraries (Black for example uses a fork of the lib2to3 parser). It may be helpful
+to identify widely-used parsing libraries (such as parso [10]_ and libCST [11]_)
+and upgrade them to be PEG compatible.
+
+However, since this work would need to be done not only for the match statement,
+but for _any_ new Python syntax that leverages the capbilities of the PEG parser,
+it is considered out of scope for this PEP. (Although it is suggested that this
+would make a fine Summer of Code project.)
+
+
 Reference Implementation
 ========================
 
@@ -1227,31 +1303,6 @@ We can still experiment with possible performance optimizations in this
 direction if they will not cause semantic differences.
 
 
-Allow ``elif match`` and other one-offs
----------------------------------------
-
-There was an idea to allow multi-branch one-off matches of the following
-form::
-
-  if match value_1 as patter_1 [and guard_1]:
-      ...
-  elif match value_2 as pattern_2 [and guard_2]:
-      ...
-  elif match value_3 as pattern_3 [and guard_3]:
-      ...
-  else:
-      ...
-
-Since one-off matches have been placed in the 'deferred' category, this
-suggestion is moot.
-
-However, even with one-off matches, it was decided not to this. Mainly because
-this defeats the purpose of one-off matches as a complement to exhaustive full
-matches. Similarly, we don't propose ``while match`` construct present in some
-languages with pattern matching, since although it may be handy, it will likely
-be used rarely.
-
-
 Use ``continue`` and ``break`` in case clauses.
 -----------------------------------------------
 
@@ -1346,6 +1397,23 @@ to be members of a discrete set, `static checkers`_ can warn about missing
 patterns.
 
 
+Type annotations for pattern variables
+--------------------------------------
+
+The proposal was to combine patterns with type annotations::
+
+  match x:
+      case [a: int, b: str]: print(f"An int {a} and a string {b}:)
+      case [a: int, b: int, c: int]: print(f"Three ints", a, b, c)
+      ...
+
+This idea has a lot of problems. For one, the colon can only
+be used inside of brackets or parens, otherwise the syntax becomes
+ambiguous. And because Python disallows ``isinstance()`` checks
+on generic types, type annotations containing generics will not
+work as expected.
+
+
 .. _deferred ideas:
 
 Deferred Ideas
@@ -1367,7 +1435,7 @@ One-off syntax variant
 While inspecting some code-bases that may benefit the most from the proposed
 syntax, it was found that single clause matches would be used relatively often,
 mostly for various special-casing. In other languages this is supported in
-the form of one-off matches. We propose to support such one-off matches too::
+the form of one-off matches. We proposed to support such one-off matches too::
 
   if match value as pattern [and guard]:
       ...
@@ -1382,11 +1450,6 @@ as equivalent to the following expansion::
   match value:
       case pattern [if guard]:
           ...
-
-Even in the variant ``if match``, there will be no ``elif match`` statements
-allowed. One-off match is special case of ``match`` statement, not a special
-case of an ``if`` statement.  Similarly, ``if not match`` is not allowed,
-since ``match ... as ...`` is not an expression.
 
 To illustrate how this will benefit readability, consider this (slightly
 simplified) snippet from real code::
@@ -1404,6 +1467,27 @@ This can be rewritten in a more straightforward way as::
   if match node as CallExpr(callee=NameExpr(name=call), args=[NameExpr(name=arg)]):
       ...  # Continue special-casing 'call' and 'arg'
   ...  # Follow with common code
+
+This one-off form would not allow ``elif match`` statements, as it was only
+meant to handle a single pattern case. It was intended to be special case
+of a ``match`` statement, not a special case of an ``if`` statement::
+
+  if match value_1 as patter_1 [and guard_1]:
+      ...
+  elif match value_2 as pattern_2 [and guard_2]:  # Not allowed
+      ...
+  elif match value_3 as pattern_3 [and guard_3]:  # Not allowed
+      ...
+  else:  # Also not allowed
+      ...
+
+This would defeat the purpose of one-off matches as a complement to exhaustive
+full matches - it's better and clearer to use a full match in this case.
+
+Similarly, ``if not match`` would not be allowed, since ``match ... as ...`` is not
+an expression. Nor do we propose a ``while match`` construct present in some languages
+with pattern matching, since although it may be handy, it will likely be used
+rarely.
 
 
 Algebraic matching of repeated names
@@ -1529,6 +1613,15 @@ References
 
 .. [8]
    https://dl.acm.org/doi/abs/10.1145/2480360.2384582
+
+.. [9]
+   https://black.readthedocs.io/en/stable/
+
+.. [10]
+   https://github.com/davidhalter/parso
+
+.. [11]
+   https://github.com/Instagram/LibCST
 
 
 Copyright
