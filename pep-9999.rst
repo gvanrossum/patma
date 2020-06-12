@@ -306,10 +306,15 @@ considered a reference::
       case BLACK:  # This will just assign a new value to BLACK.
           ...
 
-Note: the leading dot can be omitted if the name is already dotted, but
+The leading dot can be omitted if the name is already dotted, but
 adding it is not prohibited, so ``.Color.BLACK`` is same as ``Color.BLACK``.
 See `rejected ideas`_ for other syntactic alternatives that were considered
 for constant value pattern.
+
+The initial name must not be ``_``, so these are invalid::
+
+    case ._: ...
+    case _.a: ...
 
 
 .. _sequence_pattern:
@@ -402,7 +407,10 @@ If the method returns ``None``, the match fails, otherwise the
 match continues w.r.t. attributes of the returned proxy object, see details
 in `runtime`_ section.
 
-The named class must inherit from ``type``.
+The named class must inherit from ``type``.  It may be a single name
+or a dotted name (e.g. ``some_mod.SomeClass`` or ``mod.pkg.Class``).
+The leading name must not be ``_``, so e.g. ``_(...)`` and
+``_.C(...)`` are invalid.
 
 This PEP only fully specifies the behavior of ``__match__()`` for ``object``
 and some builtin and standard library classes, custom classes are only
