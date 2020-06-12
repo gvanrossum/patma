@@ -1442,6 +1442,18 @@ on generic types, type annotations containing generics will not
 work as expected.
 
 
+Allow ``*rest`` in class patterns
+---------------------------------
+
+It was proposed to allow ``*rest`` in a class pattern, giving a
+variable to be bound to all positional arguments at once (similar to
+its use in unpacking assignments).  It would provide some symmetry
+with sequence patterns.  But it might be confused with a feature to
+provide the *values* for all positional arguments at once.  And there
+seems to be no practical need for it, so it was scrapped.  (It could
+easily be added at a later stage if a need arises.)
+
+
 .. _deferred ideas:
 
 Deferred Ideas
