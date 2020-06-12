@@ -555,7 +555,7 @@ following:
   translates to ``isinstance(obj, Foo) and obj.bar == val``, and the latter
   raises on missing attributes.
 
-* If the missing attribute is present in ``__match_args__`` (which must be a list
+* If the missing attribute is present in ``__match_args__`` (which must be a list or tuple
   of strings), the match fails instead of rising an exception.
 
 * If there are match-by-position items, the item at position ``i`` is matched
@@ -644,7 +644,7 @@ The ``__match_args__`` and ``__match_args_required__`` attributes are always
 looked up on the proxy returned by ``__match__()``.
 
 * ``__match_args__``, if it is present and not ``None``, must be a
-  list of strings naming the allowed positional arguments.
+  list or tuple of strings naming the allowed positional arguments.
 
 * ``__match_args_required__``, if present, gives the minimum number of
   arguments from ``__match_args__`` that must be matched (either by
