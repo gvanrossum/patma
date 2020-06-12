@@ -380,6 +380,8 @@ If the method returns ``None``, the match fails, otherwise the
 match continues w.r.t. attributes of the returned proxy object, see details
 in `runtime`_ section.
 
+The named class must inherit from ``type``.
+
 This PEP only fully specifies the behavior of ``__match__()`` for ``object``
 and some builtin and standard library classes, custom classes are only
 required to follow the protocol specified in `runtime`_ section. After all,
@@ -1227,31 +1229,6 @@ We can still experiment with possible performance optimizations in this
 direction if they will not cause semantic differences.
 
 
-Allow ``elif match`` and other one-offs
----------------------------------------
-
-There was an idea to allow multi-branch one-off matches of the following
-form::
-
-  if match value_1 as patter_1 [and guard_1]:
-      ...
-  elif match value_2 as pattern_2 [and guard_2]:
-      ...
-  elif match value_3 as pattern_3 [and guard_3]:
-      ...
-  else:
-      ...
-
-Since one-off matches have been placed in the 'deferred' category, this
-suggestion is moot.
-
-However, even with one-off matches, it was decided not to this. Mainly because
-this defeats the purpose of one-off matches as a complement to exhaustive full
-matches. Similarly, we don't propose ``while match`` construct present in some
-languages with pattern matching, since although it may be handy, it will likely
-be used rarely.
-
-
 Use ``continue`` and ``break`` in case clauses.
 -----------------------------------------------
 
@@ -1346,6 +1323,23 @@ to be members of a discrete set, `static checkers`_ can warn about missing
 patterns.
 
 
+Type annotations for pattern variables
+--------------------------------------
+
+The proposal was to combine patterns with type annotations::
+
+  match x:
+      case [a: int, b: str]: print(f"An int {a} and a string {b}:)
+      case [a: int, b: int, c: int]: print(f"Three ints", a, b, c)
+      ...
+
+This idea has a lot of problems. For one, the colon can only
+be used inside of brackets or parens, otherwise the syntax becomes
+ambiguous. And because Python disallows ``isinstance()`` checks
+on generic types, type annotations containing generics will not
+work as expected.
+
+
 .. _deferred ideas:
 
 Deferred Ideas
@@ -1367,7 +1361,7 @@ One-off syntax variant
 While inspecting some code-bases that may benefit the most from the proposed
 syntax, it was found that single clause matches would be used relatively often,
 mostly for various special-casing. In other languages this is supported in
-the form of one-off matches. We propose to support such one-off matches too::
+the form of one-off matches. We proposed to support such one-off matches too::
 
   if match value as pattern [and guard]:
       ...
@@ -1382,11 +1376,6 @@ as equivalent to the following expansion::
   match value:
       case pattern [if guard]:
           ...
-
-Even in the variant ``if match``, there will be no ``elif match`` statements
-allowed. One-off match is special case of ``match`` statement, not a special
-case of an ``if`` statement.  Similarly, ``if not match`` is not allowed,
-since ``match ... as ...`` is not an expression.
 
 To illustrate how this will benefit readability, consider this (slightly
 simplified) snippet from real code::
@@ -1404,6 +1393,27 @@ This can be rewritten in a more straightforward way as::
   if match node as CallExpr(callee=NameExpr(name=call), args=[NameExpr(name=arg)]):
       ...  # Continue special-casing 'call' and 'arg'
   ...  # Follow with common code
+
+This one-off form would not allow ``elif match`` statements, as it was only
+meant to handle a single pattern case. It was intended to be special case
+of a ``match`` statement, not a special case of an ``if`` statement::
+
+  if match value_1 as patter_1 [and guard_1]:
+      ...
+  elif match value_2 as pattern_2 [and guard_2]:  # Not allowed
+      ...
+  elif match value_3 as pattern_3 [and guard_3]:  # Not allowed
+      ...
+  else:  # Also not allowed
+      ...
+
+This would defeat the purpose of one-off matches as a complement to exhaustive
+full matches - it's better and clearer to use a full match in this case.
+
+Similarly, ``if not match`` would not be allowed, since ``match ... as ...`` is not
+an expression. Nor do we propose a ``while match`` construct present in some languages
+with pattern matching, since although it may be handy, it will likely be used
+rarely.
 
 
 Algebraic matching of repeated names
