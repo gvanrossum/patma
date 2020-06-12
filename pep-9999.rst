@@ -1079,7 +1079,16 @@ would make a fine Summer of Code project.)
 Reference Implementation
 ========================
 
-A CPython implementation is `currently under development <https://github.com/brandtbucher/cpython/tree/patma>`_.
+A CPython implementation is
+`currently under development <https://github.com/brandtbucher/cpython/tree/patma>`_.
+
+
+Example Code
+============
+
+A small collection of example code is
+`available on GitHub <https://github.com/gvanrossum/patma/tree/master/examples>`_.
+
 
 
 .. _rejected ideas:
