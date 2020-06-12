@@ -212,16 +212,26 @@ A literal pattern consists of a simple literal like a string, a number,
 a boolean, or ``None``::
 
   match number:
+      case 0:
+          print("Nothing")
       case 1:
           print("Just one")
       case 2:
           print("A couple")
+      case -1:
+          print("One less than nothing")
+      case 1-1j:
+          print("Good luck with that...")
 
 Literal pattern uses equality with literal on the right hand side, so that
 in the above example ``number == 1`` and then possibly ``number == 2`` will
 be evaluated. Note that although technically negative numbers
-are represented by a unary operation expression, they are considered
-literals for the purpose of pattern matching. Raw strings and byte strings
+are represented using unary minus, they are considered
+literals for the purpose of pattern matching. Unary plus is not allowed.
+Binary plus and minus are allowed only to join a real number and an imaginary
+number to form a complex number, such as ``1+1j``.
+
+Raw strings and byte strings
 are supported. F-strings are not allowed (since in general they are not
 really literals).
 
@@ -322,7 +332,13 @@ Note that to match a sequence pattern the target must be an instance of
 (``str``, ``bytes``, ``bytearray``). It cannot be an iterator. For matching
 on a specific collection class, see class pattern below.
 
-**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+The ``_`` wildcard can be starred to match sequences of varying lengths. For
+example:
+
+* ``[*_]`` matches a sequence of any length.
+* ``[_, _, *_]``, matches any sequence of length two or more.
+* ``["a", *_, "z"]`` matches any sequence of length two or more that starts with
+  ``"a"`` and ends with ``"z"``.
 
 
 .. _mapping_pattern:
@@ -339,7 +355,7 @@ patterns are allowed in key positions::
   import constants
 
   match config:
-      case {"route" | "Route": route}:
+      case {"route": route}:
           process_route(route)
       case {constants.DEFAULT_PORT: sub_config, **rest}:
           process_config(sub_config, rest)
@@ -351,7 +367,13 @@ match to fail. But mappings are actually different from sequences: they
 have natural structural sub-typing behavior, i.e., passing a dictionary
 with extra keys somewhere will likely just work.
 
-**TODO**: Add notes about the behavior of the _ wildcard in rest patterns.
+For this reason, ``**_`` is invalid in mapping patterns; it would always be a
+no-op that could be removed without consequence.
+
+Matched key-value pairs must already be present in the mapping, and not created
+on-the-fly by ``__missing__`` or ``__getitem__``.  For example,
+``collections.defaultdict`` instances will only match patterns with keys that
+were already present when the ``match`` block was entered.
 
 
 .. _class_pattern:
@@ -478,7 +500,7 @@ the form ``name := pattern``. For example::
 
 Note that the name pattern used in the named sub-pattern can be used in
 the match suite, or after the match statement.  However, the name will
-*only* be bound if the match succeeds.  Another example::
+*only* be bound if the sub-pattern succeeds.  Another example::
 
   match group_shapes():
       case [], [point := Point(x, y), *other]:
@@ -490,6 +512,8 @@ Technically, most such examples can be rewritten using guards and/or nested
 match statements, but this will be less readable and/or will produce less
 efficient code. Essentially, most of the arguments in PEP 572 apply here
 equally.
+
+``_`` is not a valid name here.
 
 
 .. _runtime:
@@ -528,6 +552,16 @@ following:
   a pattern ``Point2D(5, 8)``, where ``Point2D.__match__()`` returns a proxy
   with ``__match_args__ == ["x", "y"]``, is translated (approximately) into
   ``obj.x == 5 and obj.y == 8``.
+
+* When ``__match_args__`` is missing (as is the default) or ``None``, a single
+  positional sub-pattern is allowed to be passed to the call. Rather than being
+  matched against any particular attribute on the proxy, it is instead matched
+  against the proxy itself.  This creates default behavior that is useful and
+  intuitive for most objects:
+
+  * ``bool(False)`` matches ``False`` (but not ``0``).
+  * ``tuple([0, 1, 2])`` matches ``(0, 1, 2)`` (but not ``range(3)``).
+  * ``int(i)`` matches any ``int`` and binds it to the name ``i``.
 
 * If there are more positional items than the length of ``__match_args__``, an
   ``ImpossibleMatchError`` is raised.
