@@ -650,8 +650,10 @@ looked up on the proxy returned by ``__match__()``.
   arguments from ``__match_args__`` that must be matched (either by
   position or by keyword).  It must be a nonnegative ``int`` not
   greater than the length of ``__match_args__``.  If the latter is
-  absent or ``None``, ``__match_args_required__`` can only be absent
-  or ``0``.
+  absent or ``None``, ``__match_args_required__`` can only be absent,
+  ``0`` or ``1``. (The value ``1`` is allowed because if
+  ``__match_args__`` is missing or ``None``, a single positional
+  argument is allowed which matches the target object itself.)
 
 
 Default ``object.__match__()``
