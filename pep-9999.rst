@@ -128,24 +128,28 @@ Syntax and Semantics
 Case clauses
 ------------
 
-A simplified approximate grammar for the proposed syntax is::
+A simplified, approximate grammar for the proposed syntax is::
 
   ...
   compound_statement:
       | if_stmt
       ...
       | match_stmt
-  match_stmt: "match" expression ":" NEWLINE INDENT case_block+ DEDENT
-  case_block: "case" pattern ["if" expression] ":" block
-  pattern:
-      | NAME
-      | [NAME ":="] other_pattern ("|" other_pattern)*
-  other_pattern:
+  match_stmt: "match" expression ':' NEWLINE INDENT case_block+ DEDENT
+  case_block: "case" pattern [guard] ':' block
+  guard: 'if' expression
+  pattern: NAME ':=' or_pattern | or_pattern
+  or_pattern: closed_pattern ('|' closed_pattern)*
+  closed_pattern:
+      | name_pattern
       | literal_pattern
-      | constant_value_pattern
+      | constant_pattern
+      | group_pattern
       | sequence_pattern
       | mapping_pattern
       | class_pattern
+
+(See Appendix A for the full, unabridged grammar.)
 
 We propose the match syntax to be a statement, not an expression. Although in
 many languages it is an expression, being a statement better suits the general
@@ -1675,6 +1679,67 @@ References
 
 .. [11]
    https://github.com/Instagram/LibCST
+
+
+Appendix A -- Full Grammar
+==========================
+
+Here is the full grammar for ``match_stmt``.  This is an additional
+alternative for ``compound_stmt``.  It should be understood that
+``match`` and ``case`` are soft keywords, i.e. they are not reserved
+words in other grammatical contexts (including at the start of a line
+if there is no colon where expected).  By convention, hard keywords
+use single quotes while soft keywords use double quotes.
+
+Other notation used beyond standard EBNF:
+
+- ``SEP.RULE+`` is shorthand for ``RULE (SEP RULE)*``
+- ``!RULE`` is a negative lookahead assertion
+
+::
+
+  match_stmt: "match" expression ':' NEWLINE INDENT case_block+ DEDENT
+  case_block: "case" patterns [guard] ':' block
+  guard: 'if' named_expression
+  patterns: value_pattern ',' [values_pattern] | pattern
+  pattern: NAME ':=' or_pattern | or_pattern
+  or_pattern: '|'.closed_pattern+
+  closed_pattern:
+      | name_pattern
+      | literal_pattern
+      | constant_pattern
+      | group_pattern
+      | sequence_pattern
+      | mapping_pattern
+      | class_pattern
+  name_pattern: NAME !('.' | '(' | '=')
+  literal_pattern:
+      | signed_number !('+' | '-')
+      | signed_number '+' NUMBER
+      | signed_number '-' NUMBER
+      | strings
+      | 'None'
+      | 'True'
+      | 'False'
+  constant_pattern: '.' NAME !('.' | '(' | '=') | '.'? attr !('.' | '(' | '=')
+  group_pattern: '(' patterns ')'
+  sequence_pattern: '[' [values_pattern] ']' | '(' ')'
+  mapping_pattern: '{' items_pattern? '}'
+  class_pattern:
+      | name_or_attr '(' ')'
+      | name_or_attr '(' ','.pattern+ ','? ')'
+      | name_or_attr '(' ','.keyword_pattern+ ','? ')'
+      | name_or_attr '(' ','.pattern+ ',' ','.keyword_pattern+ ','? ')'
+  signed_number: NUMBER | '-' NUMBER
+  attr: name_or_attr '.' NAME
+  name_or_attr: attr | NAME
+  values_pattern: ','.value_pattern+ ','?
+  items_pattern: ','.key_value_pattern+ ','?
+  keyword_pattern: NAME '=' or_pattern
+  value_pattern: '*' name_pattern | pattern
+  key_value_pattern:
+      | (literal_pattern | constant_pattern) ':' or_pattern
+      | '**' name_pattern
 
 
 Copyright
