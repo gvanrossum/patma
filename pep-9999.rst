@@ -990,7 +990,7 @@ easy, just an addition to a table, or perhaps modification of a regular
 expression.
 
 **Deep** parsers understand the complete syntax of Python. An example of this
-is the auto-formatter Black [8]_. A particular requirement with these kinds of
+is the auto-formatter Black [9]_. A particular requirement with these kinds of
 tools is that they not only need to understand the syntax of the current version
 of Python, but older versions of Python as well.
 
@@ -1001,8 +1001,8 @@ time with the new syntax.
 
 It has been noted that a number of these third-party tools leverage common parsing
 libraries (Black for example uses a fork of the lib2to3 parser). It may be helpful
-to identify widely-used parsing libraries (such as libCST) and upgrade them to be
-PEG compatible. (Bonus points for removing the need to fork them.)
+to identify widely-used parsing libraries (such as parso [10]_ and libCST [11]_)
+and upgrade them to be PEG compatible.
 
 However, since this work would need to be done not only for the match statement,
 but for _any_ new Python syntax that leverages the capbilities of the PEG parser,
@@ -1572,6 +1572,12 @@ References
 
 .. [9]
    https://black.readthedocs.io/en/stable/
+
+.. [10]
+   https://github.com/davidhalter/parso
+
+.. [11]
+   https://github.com/Instagram/LibCST
 
 
 Copyright
