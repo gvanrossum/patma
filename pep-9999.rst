@@ -1039,7 +1039,14 @@ is called.
 Backwards Compatibility
 =======================
 
-This PEP is fully backwards compatible.
+This PEP is fully backwards compatible: the ``match`` and ``case``
+keywords are proposed to be (and stay!) soft keywords, so their use as
+variable, function, class, module or attribute names is not impeded at
+all.
+
+This is important because ``match`` is the name of a popular and
+well-known function and method in the ``re`` module, which we have no
+desire to break or deprecate.
 
 
 Impacts on third-party tools
