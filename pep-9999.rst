@@ -149,7 +149,7 @@ A simplified, approximate grammar for the proposed syntax is::
       | mapping_pattern
       | class_pattern
 
-(See Appendix A for the full, unabridged grammar.)
+(See `Appendix A`_ for the full, unabridged grammar.)
 
 We propose the match syntax to be a statement, not an expression. Although in
 many languages it is an expression, being a statement better suits the general
@@ -1680,6 +1680,8 @@ References
 .. [11]
    https://github.com/Instagram/LibCST
 
+
+.. _Appendix A:
 
 Appendix A -- Full Grammar
 ==========================
