@@ -1048,6 +1048,26 @@ This is important because ``match`` is the name of a popular and
 well-known function and method in the ``re`` module, which we have no
 desire to break or deprecate.
 
+The difference between hard and soft keywords is that hard keywords
+are *always* reserved words, even in positions where they make no
+sense (e.g. ``x = class + 1``), while soft keywords only get a special
+meaning in context.  Since our parser backtracks, that means that on
+different attempts to parse a code fragment it could interpret a soft
+keyword differently.
+
+For example, suppose the parser encounters the following input::
+
+  match [x, y]:
+
+The parser first attempts to parse this as an expression statement.
+It interprets ``match`` as a NAME token, and then considers ``[x,
+y]]`` to be a double subscript.  It then encounters the colon and has
+to backtrack, since an expression statement cannot be followed by a
+colon.  The parser then backtracks to the start of the line and finds
+that ``match`` is a soft keyword allowed in this position.  It then
+considers ``[x, y]]` to be a list expression.  The colon then is just
+what the parser expected, and the parse succeeds.
+
 
 Impacts on third-party tools
 ============================
