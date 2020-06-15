@@ -552,20 +552,19 @@ following:
   the returned proxy and matched against corresponding sub-patterns. If at
   least one sub-patterns fails, the match fails.
 
-* If an attribute is missing on the proxy, and it has no ``__match_args__``
+* If an attribute is missing on the proxy, and the class being matched has no ``__match_args__``
   attribute (or it is ``None``)), an ``ImpossibleMatchError`` is raised.
   This is motivated by
   catching typos in attribute names. Conceptually, a pattern ``Foo(bar=value)``
   translates to ``isinstance(obj, Foo) and obj.bar == val``, and the latter
   raises on missing attributes.
 
-* If the missing attribute is present in ``__match_args__`` (which must be a list or tuple
+* If the missing attribute is present in the class's ``__match_args__`` (which must be a list or tuple
   of strings), the match fails instead of rising an exception.
 
 * If there are match-by-position items, the item at position ``i`` is matched
   against the value looked up by attribute ``__match_args__[i]``. For example,
-  a pattern ``Point2D(5, 8)``, where ``Point2D.__match__()`` returns a proxy
-  with ``__match_args__ == ["x", "y"]``, is translated (approximately) into
+  a pattern ``Point2D(5, 8)``, where ``Point2D.__match_args__ == ["x", "y"]``, is translated (approximately) into
   ``obj.x == 5 and obj.y == 8``.
 
 * When ``__match_args__`` is missing (as is the default) or ``None``, a single
@@ -581,7 +580,7 @@ following:
 * If there are more positional items than the length of ``__match_args__``, an
   ``ImpossibleMatchError`` is raised.
 
-* If the ``__match_args__`` attribute is absent on the returned proxy or ``None``,
+* If the ``__match_args__`` attribute is absent on the matched class or ``None``,
   but more than one positional item appears in a match,
   the exception is also raised. We don't fall back on
   using ``__slots__`` or ``__annotations__`` -- "In the face of ambiguity,
@@ -628,14 +627,14 @@ subsection:
 * The interpreter will check that two match items are not targeting the same
   attribute, for example ``Point2D(1, 2, y=3)`` is an error.
 
-* If the match proxy has a ``__match_args_required__`` attribute (which should
+* If the matched class has a ``__match_args_required__`` attribute (which should
   be a positive integer), the interpreter checks that all attributes in
   ``__match_args__[:__match_args_required__]`` are matched. For example,
-  ``Point2D(1)`` is an error if ``__match_args_required__ == 2``.
+  ``Point2D(1)`` is an error if ``Point2D.__match_args_required__ == 2``.
 
 * As a clarification to the above, the required attributes are not required to
   be matched *by position*, they are just required to be matched, so that
-  ``Point2D(1, y=2)`` is still valid when ``__match_args_required__ == 2``.
+  ``Point2D(1, y=2)`` is still valid when ``Point2D.__match_args_required__ == 2``.
 
 * Finally, by name only matches always succeed, even when
   ``__match_args_required__`` is provided.
@@ -645,7 +644,7 @@ Special attributes ``__match_args__`` and ``__match_args_required__``
 ---------------------------------------------------------------------
 
 The ``__match_args__`` and ``__match_args_required__`` attributes are always
-looked up on the proxy returned by ``__match__()``.
+looked up on the matched class.
 
 * ``__match_args__``, if it is present and not ``None``, must be a
   list or tuple of strings naming the allowed positional arguments.
