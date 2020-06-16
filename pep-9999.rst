@@ -315,10 +315,14 @@ adding it is not prohibited, so ``.Color.BLACK`` is the same as ``Color.BLACK``.
 See `rejected ideas`_ for other syntactic alternatives that were considered
 for constant value pattern.
 
-The initial name must not be ``_``, so these are invalid::
+The initial name must not be ``_`` because ``_`` has a special meaning in
+pattern matching, so these are invalid::
 
     case ._: ...
     case _.a: ...
+
+However, ``a._`` is legal and loads the attribute with name ``_`` of the
+object ``a`` as usual.
 
 
 .. _sequence_pattern:
