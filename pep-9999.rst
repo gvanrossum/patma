@@ -578,7 +578,7 @@ following:
   intuitive for most objects:
 
   * ``bool(False)`` matches ``False`` (but not ``0``).
-  * ``tuple((0, 1, 2))`` matches ``(0, 1, 2)`` (but not ``range(3)``).
+  * ``tuple((0, 1, 2))`` matches ``(0, 1, 2)`` (but not ``[0, 1, 2]``).
   * ``int(i)`` matches any ``int`` and binds it to the name ``i``.
 
 * If there are more positional items than the length of ``__match_args__``, an
@@ -644,23 +644,13 @@ subsection:
   ``__match_args_required__`` is provided.
 
 
-Special attributes ``__match_args__`` and ``__match_args_required__``
----------------------------------------------------------------------
+Special attribute ``__match_args__``
+------------------------------------
 
-The ``__match_args__`` and ``__match_args_required__`` attributes are always
-looked up on the matched class.
-
-* ``__match_args__``, if it is present and not ``None``, must be a
-  list or tuple of strings naming the allowed positional arguments.
-
-* ``__match_args_required__``, if present, gives the minimum number of
-  arguments from ``__match_args__`` that must be matched (either by
-  position or by keyword).  It must be a nonnegative ``int`` not
-  greater than the length of ``__match_args__``.  If the latter is
-  absent or ``None``, ``__match_args_required__`` can only be absent,
-  ``0`` or ``1``. (The value ``1`` is allowed because if
-  ``__match_args__`` is missing or ``None``, a single positional
-  argument is allowed which matches the target object itself.)
+The ``__match_args__`` attribute is always looked up on the result returned
+by ``__match__`` (the 'match proxy').  ``__match_args__``, if it is present
+and not ``None``, must be a list or tuple of strings naming the allowed
+positional arguments.
 
 
 Default ``object.__match__()``
