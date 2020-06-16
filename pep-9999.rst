@@ -1408,7 +1408,7 @@ call::
 
 This would allow faster ``__match__()`` implementations and give better
 support for customization in user-defined classes. There is however a big
-downside to this: it will make basic implementation of this method quite
+downside to this: it would make the basic implementation of this method quite
 tedious. Also, there will be actual performance penalty if the user does not
 treat pattern object properly.
 
