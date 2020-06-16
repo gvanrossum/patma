@@ -683,8 +683,8 @@ some attributes from matching against them, a custom ``__match__()`` method is
 required.
 
 
-Builtin classes
----------------
+Builtin classes and standard library
+------------------------------------
 
 To facilitate the use of pattern matching, several changes will be made to
 builtins:
