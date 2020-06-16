@@ -422,6 +422,9 @@ or a dotted name (e.g. ``some_mod.SomeClass`` or ``mod.pkg.Class``).
 The leading name must not be ``_``, so e.g. ``_(...)`` and
 ``_.C(...)`` are invalid.
 
+Use ``object(foo=_)`` rather than ``_(foo=_)`` to check whether the
+matched object has an attribute ``foo``.
+
 This PEP only fully specifies the behavior of ``__match__()`` for ``object``
 and some builtin and standard library classes, custom classes are only
 required to follow the protocol specified in `runtime`_ section. After all,
@@ -647,10 +650,10 @@ subsection:
 Special attribute ``__match_args__``
 ------------------------------------
 
-The ``__match_args__`` attribute is always looked up on the result returned
-by ``__match__`` (the 'match proxy').  ``__match_args__``, if it is present
-and not ``None``, must be a list or tuple of strings naming the allowed
-positional arguments.
+The ``__match_args__`` attribute complements the ``__match__`` method and is
+always looked up on the same class as the ``__match__`` method.
+``__match_args__``, if it is present and not ``None``, must be a list or
+tuple of strings naming the allowed positional arguments.
 
 
 Default ``object.__match__()``
@@ -682,11 +685,11 @@ some attributes from matching against them, a custom ``__match__()`` method is
 required.
 
 
-Builtin classes and standard library
-------------------------------------
+Builtin classes
+---------------
 
 To facilitate the use of pattern matching, several changes will be made to
-builtins and the standard library:
+builtins:
 
 * Builtin collections (except sets) will define ``__match__`` and/or
   ``__match_args__`` to support matching a specific class rather than sequence
@@ -698,48 +701,12 @@ builtins and the standard library:
         case list([x, y, z]):
             ...
 
-* Named tuples and dataclasses will have auto-generated ``__match_args__`` and
-  ``__match_args_required__``.
+* Named tuples and dataclasses will have auto-generated ``__match_args__``.
 
 * For dataclasses the order of attributes in the generated ``__match_args__``
   will be the same as the order of corresponding arguments in the generated
   ``__init__()`` method. This includes the situations where attributes are
   inherited from a superclass.
-
-* For dataclasses the ``__match_args_required__`` includes all fields
-  without a default value, or a default factory.
-
-A new ``patterns`` module will be added to the standard library. It will
-contain various helpers to simply define custom ``__match__()`` methods, in
-particular, a thin wrapper class ``MatchWrapper`` that will allow hiding and
-adding attributes for match purposes, setting ``__match_args__`` etc.
-For example::
-
-  from patterns import MatchWrapper
-
-  class Point:
-      def __init__(self, x: int, y: int) -> None:
-          self.x = x
-          self.y = y
-          self._processed = False
-
-      @classmethod
-      def __match__(cls, obj):
-          if isinstance(obj, cls):
-              return MatchWrapper(obj, ['x', 'y'], coordinates=[obj.x, obj.y])
-
-  p = Point(1, 2)
-  match p:
-      case Point(x, y):  # This works
-          ...
-      case Point(coordinates=[1, 2]):  # Also works
-          ...
-      case Point(_processed=False):  # Not included in allowed attributes, raises
-          ...
-
-In addition, a systematic effort will be put into going through existing
-standard library classes and adding custom ``__match__()`` and/or
-``__match_args__`` where it looks beneficial.
 
 
 .. _static checkers:
