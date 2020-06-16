@@ -701,7 +701,7 @@ builtins:
         case list([x, y, z]):
             ...
 
-* Named tuples and dataclasses will have auto-generated ``__match_args__``.
+* Namedtuples and dataclasses will have auto-generated ``__match_args__``.
 
 * For dataclasses the order of attributes in the generated ``__match_args__``
   will be the same as the order of corresponding arguments in the generated
