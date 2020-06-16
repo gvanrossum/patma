@@ -178,8 +178,8 @@ are not tried. If there are no matching pattens, the statement 'falls
 through', and execution continues at the following statement.
 
 Essentially this is equivalent to a chain of ``if ... elif ... else``
-statements. Note that unlike for the proposed ``switch`` statement, the
-pre-computed dispatch dictionary semantics does not apply here.
+statements. Note that unlike for the previously proposed ``switch`` statement,
+the pre-computed dispatch dictionary semantics does not apply here.
 
 There is no ``default`` or ``else`` case - instead the special wildcard
 ``_`` can be used (see the section on `name_pattern`_) as a final
@@ -311,7 +311,7 @@ considered a reference::
           ...
 
 The leading dot can be omitted if the name is already dotted, but
-adding it is not prohibited, so ``.Color.BLACK`` is same as ``Color.BLACK``.
+adding it is not prohibited, so ``.Color.BLACK`` is the same as ``Color.BLACK``.
 See `rejected ideas`_ for other syntactic alternatives that were considered
 for constant value pattern.
 
@@ -889,7 +889,7 @@ Type erasure
 ------------
 
 Class patterns are subject to runtime type erasure. Namely, although one
-can define a type alias``IntQueue = Queue[int]`` so that a pattern like
+can define a type alias ``IntQueue = Queue[int]`` so that a pattern like
 ``IntQueue()`` is syntactically valid, type checkers should rejected such
 match::
 
@@ -1064,7 +1064,7 @@ y]]`` to be a double subscript.  It then encounters the colon and has
 to backtrack, since an expression statement cannot be followed by a
 colon.  The parser then backtracks to the start of the line and finds
 that ``match`` is a soft keyword allowed in this position.  It then
-considers ``[x, y]` to be a list expression.  The colon then is just
+considers ``[x, y]`` to be a list expression.  The colon then is just
 what the parser expected, and the parse succeeds.
 
 
@@ -1103,7 +1103,7 @@ to identify widely-used parsing libraries (such as parso [10]_ and libCST [11]_)
 and upgrade them to be PEG compatible.
 
 However, since this work would need to be done not only for the match statement,
-but for _any_ new Python syntax that leverages the capbilities of the PEG parser,
+but for *any* new Python syntax that leverages the capbilities of the PEG parser,
 it is considered out of scope for this PEP. (Although it is suggested that this
 would make a fine Summer of Code project.)
 
@@ -1139,7 +1139,7 @@ In our opinion, the proposed pattern matching is not more difficult than
 adding ``isinstance()`` and ``getattr()`` to iterable unpacking. Also, we
 believe the proposed syntax significantly improves readability for a wide
 range of code patterns, by allowing to express *what* one wants to do, rather
-than *how* to do it. We hope few real code snippets we included in the PEP
+than *how* to do it. We hope the few real code snippets we included in the PEP
 above illustrate this comparison well enough. For more real code examples
 and their translations see Ref. [7]_.
 
@@ -1193,12 +1193,12 @@ and object-deconstruction as found in functional languages.  While the proposed
 keyword ``case`` highlights the multi-branch aspect, alternative keywords such
 as ``as`` would equally be possible, highlighting the deconstruction aspect.
 ``as`` or ``with``, for instance, also have the advantage of already being
-keywords in Python.  Other variants would use a symbol like ``|`` or ``=>``,
-or go entirely without special marker.
+keywords in Python.  However, since ``case`` as a keyword can only occur as a
+leading keyword inside  a ``match`` statement, it is easy for a compiler to
+distinguish between its use as a keyword or as a variable.
 
-However, since ``case`` as a keyword can only occur as a leading keyword inside
-a ``match`` statement, it is easy for a compiler to distinguish between its use
-as a keyword or as a variable.
+Other variants would use a symbol like ``|`` or ``=>``, or go entirely without
+special marker.
 
 Since Python is a statement-oriented language in the tradition of Algol, and as
 each composite statement starts with an identifying keyword, ``case`` seemed to
@@ -1234,8 +1234,8 @@ Alternatives for constant value pattern
 ---------------------------------------
 
 This is probably the trickiest item. Matching against some pre-defined
-constants is very common, but also dynamic nature of Python makes it ambiguous
-with name patterns. Four other alternatives were considered:
+constants is very common, but the dynamic nature of Python also makes it
+ambiguous with name patterns. Four other alternatives were considered:
 
 * Use some implicit rules. For example if a name was defined in the global
   scope, then it refers to a constant, rather than represents a name pattern::
@@ -1246,8 +1246,8 @@ with name patterns. Four other alternatives were considered:
     match value:
         case FOO:  # This would not be matched
             ...
-        case BAR:
-            ...  # This would be matched
+        case BAR:  # This would be matched
+            ...
 
   This however can cause surprises and action at a distance if someone
   defines an unrelated coinciding name before the match statement.
@@ -1262,8 +1262,8 @@ with name patterns. Four other alternatives were considered:
     match value:
         case FOO:  # This would not be matched
             ...
-        case bar:
-            ...  # This would be matched
+        case bar:  # This would be matched
+            ...
 
   This works well with the recommendations for naming constants from
   PEP 8. The main objection is that there's no other part of core
@@ -1281,8 +1281,8 @@ with name patterns. Four other alternatives were considered:
     match value:
         case (FOO):  # This would not be matched
             ...
-        case BAR:
-            ...  # This would be matched
+        case BAR:    # This would be matched
+            ...
 
   This may be a viable option, but it can create some visual noise if used
   often. Also honestly it looks pretty unusual, especially in nested contexts.
@@ -1292,7 +1292,7 @@ with name patterns. Four other alternatives were considered:
   complex()))``.
 
 * Introduce a special symbol, for example ``$`` or ``^`` to indicate that
-  given name is a constant to be matched against, not to be assigned to::
+  a given name is a constant to be matched against, not to be assigned to::
 
     FOO = 1
     value = 0
@@ -1300,8 +1300,8 @@ with name patterns. Four other alternatives were considered:
     match value:
         case $FOO:  # This would not be matched
             ...
-        case BAR:
-            ...  # This would be matched
+        case BAR:   # This would be matched
+            ...
 
   The problem with this approach is that introducing a new syntax for such
   narrow use-case is probably an overkill.
@@ -1315,8 +1315,8 @@ with name patterns. Four other alternatives were considered:
     match value:
         case FOO:  # This would not be matched
             ...
-        case $BAR:
-            ...  # This would be matched
+        case $BAR: # This would be matched
+            ...
 
   But the name patterns are more common in typical code, so having special
   syntax for common case would be weird.
@@ -1412,11 +1412,14 @@ adding a significant benefit.
 Negative match patterns
 -----------------------
 
-A negation of a match pattern using the operator ``!`` as a prefix.
+A negation of a match pattern using the operator ``!`` as a prefix would match
+exactly if the pattern itself does not match.  For instance, ``!(3 | 4)``
+would match anything except ``3`` or ``4``.
 
 This was rejected because there is documented evidence [8]_ that this feature
-is rarely useful (in languages which support it). It can also be simulated
-using guard conditions.
+is rarely useful (in languages which support it) or used as double negation
+``!!`` to control variable scopes and prevent variable bindings (which does
+not apply to Python). It can also be simulated using guard conditions.
 
 
 Send some pattern context to ``__match__()`` method
@@ -1447,8 +1450,8 @@ call::
 This would allow faster ``__match__()`` implementations and will give better
 support for customization in user-defined classes. There is however a big
 downside to this: it will make basic implementation of this method quite
-tedious. Also, there will be actual performance penalty if user does not treat
-pattern object properly.
+tedious. Also, there will be actual performance penalty if the user does not
+treat pattern object properly.
 
 
 Check exhaustiveness at runtime
@@ -1508,7 +1511,7 @@ decided to postpone for possible future PEP. These fall into the realm of
 acquire some real-world data on how the match statement will be used in
 practice before moving forward with some of these proposals.
 
-Note that in each case, the idea was judged to tbe a "two-way door",
+Note that in each case, the idea was judged to be a "two-way door",
 meaning that there should be no backwards-compatibility issues with adding
 these features later.
 
@@ -1639,7 +1642,7 @@ Parameterized Matching Syntax
 (Also known as "Class Instance Matchers".)
 
 This is another variant of the "custom match classes" idea that would allow
-diverse kinds of custom matchers mentioned in the previous section - however,
+diverse kinds of custom matchers mentioned in the previous section -- however,
 instead of using an extended matching protocol, it would be achieved by
 introducing an additional pattern type with its own syntax. This pattern type
 would accept two distinct sets of parameters: one set which consists of the
