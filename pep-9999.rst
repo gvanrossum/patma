@@ -1153,7 +1153,7 @@ keyword ``case`` highlights the multi-branch aspect, alternative keywords such
 as ``as`` would equally be possible, highlighting the deconstruction aspect.
 ``as`` or ``with``, for instance, also have the advantage of already being
 keywords in Python.  However, since ``case`` as a keyword can only occur as a
-leading keyword inside  a ``match`` statement, it is easy for a compiler to
+leading keyword inside  a ``match`` statement, it is easy for a parser to
 distinguish between its use as a keyword or as a variable.
 
 Other variants would use a symbol like ``|`` or ``=>``, or go entirely without
