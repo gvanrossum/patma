@@ -1406,7 +1406,7 @@ call::
       False,
   )
 
-This would allow faster ``__match__()`` implementations and will give better
+This would allow faster ``__match__()`` implementations and give better
 support for customization in user-defined classes. There is however a big
 downside to this: it will make basic implementation of this method quite
 tedious. Also, there will be actual performance penalty if the user does not
