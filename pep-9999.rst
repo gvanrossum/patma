@@ -1259,7 +1259,7 @@ ambiguous with name patterns. Four other alternatives were considered:
     match value:
         case $FOO:  # This would not be matched
             ...
-        case BAR:   # This would be matched
+        case BAR:  # This would be matched
             ...
 
   The problem with this approach is that introducing a new syntax for such
