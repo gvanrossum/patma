@@ -705,6 +705,10 @@ builtins:
   will be the same as the order of corresponding arguments in the generated
   ``__init__()`` method. This includes the situations where attributes are
   inherited from a superclass.
+  
+In addition, a systematic effort will be put into going through existing
+standard library classes and adding custom ``__match__()`` and/or
+``__match_args__`` where it looks beneficial.  
 
 
 .. _static checkers:
