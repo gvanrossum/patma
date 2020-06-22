@@ -1021,7 +1021,7 @@ For example, suppose the parser encounters the following input::
 
 The parser first attempts to parse this as an expression statement.
 It interprets ``match`` as a NAME token, and then considers ``[x,
-y]]`` to be a double subscript.  It then encounters the colon and has
+y]`` to be a double subscript.  It then encounters the colon and has
 to backtrack, since an expression statement cannot be followed by a
 colon.  The parser then backtracks to the start of the line and finds
 that ``match`` is a soft keyword allowed in this position.  It then
