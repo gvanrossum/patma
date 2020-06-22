@@ -553,19 +553,10 @@ following:
 * If the result of the call (which we are referring to as "match proxy") is
   ``None``, the match fails.
 
-* Otherwise, the attributes requested in match by name items are looked up on
-  the returned proxy and matched against corresponding sub-patterns. If at
-  least one sub-patterns fails, the match fails.
-
-* If an attribute is missing on the proxy and the class being matched
-  has no ``__match_args__`` attribute (or it is ``None``), the match
-  fails.  This allows one to write ``case object(name=_)`` to
-  implement a check for the presence of a given attribute, or ``case
-  object(name=var)`` to check for its presence and extract its value.
-
-* If an attribute is missing and the class has a ``__match_args__``
-  which is not ``None``, the match fails if the attribute name is in
-  ``__match_args__``, else the match raises ``ImpossibleMatchError``.
+* Otherwise, if any sub-patterns are given in the form of positional
+  or keyword arguments, these are matched from left to right, as
+  follows.  The match fails as soon as a sub-pattern fails; if all
+  sub-patterns succeed, the overall class pattern match succeeds.
 
 * If there are match-by-position items and the class has a
   ``__match_args__`` which is not ``None``, the item at position ``i``
@@ -592,6 +583,21 @@ following:
   ``ImpossibleMatchError`` is also raised. We don't fall back on
   using ``__slots__`` or ``__annotations__`` -- "In the face of ambiguity,
   refuse the temptation to guess."
+
+* If there are any match-by-keyword items the keywords are looked up
+  as attributes on the proxy.  If the lookup succeeds the value is
+  matched against the corresponding sub-pattern.  If the lookup fails,
+  two cases are distinguished:
+
+* If an attribute is missing on the proxy and the class being matched
+  has no ``__match_args__`` attribute (or it is ``None``), the match
+  fails.  This allows one to write ``case object(name=_)`` to
+  implement a check for the presence of a given attribute, or ``case
+  object(name=var)`` to check for its presence and extract its value.
+
+* If an attribute is missing and the class has a ``__match_args__``
+  which is not ``None``, the match fails if the attribute name is in
+  ``__match_args__``, else the match raises ``ImpossibleMatchError``.
 
 Such a protocol favors simplicity of implementation over flexibility and
 performance. For other considered alternatives, see `rejected ideas`_.
