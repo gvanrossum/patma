@@ -642,18 +642,6 @@ subsection:
 * The interpreter will check that two match items are not targeting the same
   attribute, for example ``Point2D(1, 2, y=3)`` is an error.
 
-* If the matched class has a ``__match_args_required__`` attribute (which should
-  be a positive integer), the interpreter checks that all attributes in
-  ``__match_args__[:__match_args_required__]`` are matched. For example,
-  ``Point2D(1)`` is an error if ``Point2D.__match_args_required__ == 2``.
-
-* As a clarification to the above, the required attributes are not required to
-  be matched *by position*, they are just required to be matched, so that
-  ``Point2D(1, y=2)`` is still valid when ``Point2D.__match_args_required__ == 2``.
-
-* Finally, by name only matches always succeed, even when
-  ``__match_args_required__`` is provided.
-
 
 Special attribute ``__match_args__``
 ------------------------------------
