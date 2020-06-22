@@ -611,6 +611,8 @@ whose attribute values will then be bound to the corresponding keyword argument
 names in the pattern after the match is complete. For each possible name that is
 legal in the match pattern, the returned object should have a corresponding attribute
 with that name, that can be used to access that value.
+(Positional sub-patterns are matched to keyword sub-patterns using
+``__match_args__`` as shown in the previous section.)
 
 For most ordinary objects, this returned object can simply be the original object,
 unchanged.
