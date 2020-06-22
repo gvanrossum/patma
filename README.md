@@ -202,4 +202,5 @@ Several other key features:
   ```
 
 - Classes can customize how they are matched by defining a
-  `__match__()` method.  Read the [PEP](pep-9999.rst) for details.
+  `__match__()` method.
+  Read the [PEP](pep-9999.rst#runtime-specification) for details.
