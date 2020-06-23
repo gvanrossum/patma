@@ -1,5 +1,5 @@
 PEP: 9999
-Title: Pattern matching
+Title: Structural Pattern Matching
 Version: $Revision$
 Last-Modified: $Date$
 Author: Brandt Bucher <brandtbucher@gmail.com>,
@@ -12,25 +12,26 @@ Discussions-To: Python-Dev <python-dev@python.org>
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
-Created: 2020-05-04
+Created: 23-Jun-2020
 Python-Version: 3.10
+Post-History: 23-Jun-2020
 Resolution:
+
 
 Abstract
 ========
 
-This PEP proposes to add pattern matching statements [1]_ to Python. This will
-allow more readable and reliable code when dealing with structured
-heterogeneous data. The PEP takes a holistic approach and contains syntax
-specification, runtime specification, and recommended specification for static
-type checkers.
+This PEP proposes adding pattern matching statements [1]_ to Python in
+order to create more expressive ways of handling structured
+heterogeneous data.  The authors take a holistic approach, providing
+both static and runtime specifications.
 
-Previously PEP 275 and PEP 3103 that proposed similar constructs were
-rejected. Here we choose a different approach and focus on generalizing
-iterable and dictionary unpacking instead of syntax-sugaring and optimizing
-``if ... elif ... else`` statement. Also, the recently implemented PEP 617
-that introduced a new PEG parser for Python now allows more flexible syntactic
-options.
+:pep:`275` and :pep:`3103` previously proposed similar constructs, and
+were rejected.  Instead of targeting the optimization of
+``if ... elif ... else`` statements (as those PEPs did), this design
+focuses on generalizing sequence, mapping, and object destructuring.
+It uses sytactic features made possible by :pep:`617`, which
+introduced a more powerful method of parsing Python source code.
 
 
 Rationale and Goals
@@ -266,7 +267,7 @@ the ``""`` case clause was taken::
   if name == "Santa":      # <-- might raise UnboundLocalError
       ...                  # but works fine if greeting was not empty
 
-While matching against each case clause, a name should be bound at most
+While matching against each case clause, a name may be bound at most
 once, having two name patterns with coinciding names is an error. An
 exception is made for the special single underscore (``_``) name; in
 patterns, it's a wildcard that *never* binds::
@@ -337,10 +338,10 @@ pattern; there may also be at most one ``*name`` pattern to catch all
 remaining items::
 
   match collection:
+      case 1, [x, *others]:
+          print("Got 1 and a nested sequence")
       case (1, x):
-          print(f"Got 1 and a {x}")
-      case 1, (x, *other):
-          print("Got a nested sequence")
+          print(f"Got 1 and {x}")
 
 To match a sequence pattern the target must be an instance of
 ``collections.abc.Sequence``, and it cannot be any kind of string
@@ -670,7 +671,8 @@ a class wants to disallow pattern matching against itself, it should define
 ``__match__ = None``. This will cause an exception when trying to match
 against such a class.
 
-The above implementation means that by default only match-by-name will work,
+The above implementation means that by default only match-by-name and a single
+positional match by value against the proxy will work,
 and classes should define ``__match_args__`` (e.g. as a class
 attribute) if they would like to support match-by-position. Additionally,
 dataclasses will support match-by-position out of the box. See below for more
@@ -681,21 +683,11 @@ some attributes from matching against them, a custom ``__match__()`` method is
 required.
 
 
-Builtin classes and standard library
+The standard library
 ------------------------------------
 
 To facilitate the use of pattern matching, several changes will be made to
-builtins:
-
-* Builtin collections (except sets) will define ``__match__`` and/or
-  ``__match_args__`` to support matching a specific class rather than sequence
-  or mapping in general. For example::
-
-    match collection:
-        case tuple([x, y, z]):
-            ...
-        case list([x, y, z]):
-            ...
+the standard library:
 
 * Namedtuples and dataclasses will have auto-generated ``__match_args__``.
 
@@ -703,10 +695,10 @@ builtins:
   will be the same as the order of corresponding arguments in the generated
   ``__init__()`` method. This includes the situations where attributes are
   inherited from a superclass.
-  
+
 In addition, a systematic effort will be put into going through existing
 standard library classes and adding custom ``__match__()`` and/or
-``__match_args__`` where it looks beneficial.  
+``__match_args__`` where it looks beneficial.
 
 
 .. _static checkers:
@@ -740,10 +732,10 @@ expression with a union type::
   def classify(val: Union[int, Tuple[int, int], List[int]]) -> str:
       match val:
           case [x, *other]:
-              return f"A list starting with {x}"
+              return f"A sequence starting with {x}"
           case [x, y] if x > 0 and y > 0:
               return f"A pair of {x} and {y}"
-          case int(...):
+          case int():
               return f"Some integer"
           # Type-checking error: some cases unhandled.
 
@@ -915,41 +907,15 @@ Precise type checking of star matches
 -------------------------------------
 
 Type checkers should perform precise type checking of star items in pattern
-matching giving them either a heterogeneous ``tuple[X, Y, Z]`` type, or
+matching giving them either a heterogeneous ``list[T]`` type, or
 a ``TypedDict`` type as specified by PEP 589. For example::
 
-  from dataclasses import dataclass
+  stuff: Tuple[int, str, str, float]
 
-  class Expression:
-      ...
-
-  class Statement:
-      ...
-
-  @dataclass
-  class AssignmentExpression(Expression):
-      target: str
-      value: Expression
-      line: int = -1
-      column: int = -1
-
-  @dataclass
-  class AssignmentStatement(Statement):
-      target: str
-      value: Expression
-      line: int = -1
-      column: int = -1
-
-  def transform(expr: Expression) -> Statement:
-      match expr:
-          case AssignmentExpression(target, value, **position):
-              # Here position is TypedDict({"line": int, "column": int})
-              # so the below call is safe
-              return AssignmentStatement(f"{target}_tr", value, **position)
-          case AssignmentExpression(target, *rest):
-              # Here rest is tuple[Expression, int, int]
-              # so the below call is a type-checking error
-              return AssignmentStatement(*rest)
+  match stuff:
+      case a, *b, 0.5:
+          # Here a is int and b is list[str]
+          ...
 
 
 Performance Considerations
@@ -981,7 +947,7 @@ maximize performance are in order.
 Basically, the prototype implementation transforms all of the ``match``
 statement syntax into equivalent if/else blocks - or more accurately, into
 Python byte codes that have the same effect. In other words, all of the
-logic for testing instance types, sequence lengths, dictionary keys and
+logic for testing instance types, sequence lengths, mapping keys and
 so on are inlined in place of the ``match``.
 
 This is not the only possible strategy, nor is it necessarily the best.
@@ -1073,7 +1039,8 @@ Reference Implementation
 ========================
 
 A CPython implementation is
-`currently under development <https://github.com/brandtbucher/cpython/tree/patma>`_.
+`currently under development <https://github.com/brandtbucher/cpython/tree/patma>`_,
+and is almost entirely feature-complete.
 
 
 Example Code
@@ -1137,7 +1104,7 @@ syntax highlighters, we decided not to use hard keyword for several reasons:
   here we can make ``match`` a permanent soft keyword.
 
 * ``match`` is so commonly used in existing code, that it would break almost
-  every existing program and will put a burned to fix code on many people who
+  every existing program and will put a burden to fix code on many people who
   may not even benefit from the new syntax.
 
 * It is hard to find an alternative keyword that would not be commonly used
@@ -1149,7 +1116,7 @@ Use ``as`` or ``|`` instead of ``case`` for case clauses
 --------------------------------------------------------
 
 The pattern matching proposed here is a combination of multi-branch control
-flow (in line with ``switch`` in Alogol-derived languages or ``cond`` in Lisp)
+flow (in line with ``switch`` in Algol-derived languages or ``cond`` in Lisp)
 and object-deconstruction as found in functional languages.  While the proposed
 keyword ``case`` highlights the multi-branch aspect, alternative keywords such
 as ``as`` would equally be possible, highlighting the deconstruction aspect.
