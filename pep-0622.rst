@@ -713,7 +713,7 @@ From a reliability perspective, experience shows that missing a case when
 dealing with a set of possible data values leads to hard to debug issues,
 thus forcing people to add safety asserts like this::
 
-  def get_first(data: Union[int, list[int]]) -> int:
+  def get_first(data: Union[int, List[int]]) -> int:
       if isinstance(data, list) and data:
           return data[0]
       elif isinstance(data, int):
