@@ -21,17 +21,17 @@ Resolution:
 Abstract
 ========
 
-This PEP proposes adding pattern matching statements [1]_ to Python in order to
-create more expressive ways of dealing with structured heterogeneous data.  The
-authors take a holistic approach, providing both static and runtime
-specifications.
+This PEP proposes adding pattern matching statements [1]_ to Python in
+order to create more expressive ways of handling structured
+heterogeneous data.  The authors take a holistic approach, providing
+both static and runtime specifications.
 
-:pep:`275` and :pep:`3103` previously proposed similar constructs, and were
-rejected.  Instead of targeting the optimization of ``if ... elif ... else``
-statements (as those PEPs did), this design focuses on generalizing sequence,
-mapping, and object destructuring.  It uses sytactic features made possible by
-:pep:`617`, which introduced a more powerful method of parsing Python source
-code.
+:pep:`275` and :pep:`3103` previously proposed similar constructs, and
+were rejected.  Instead of targeting the optimization of
+``if ... elif ... else`` statements (as those PEPs did), this design
+focuses on generalizing sequence, mapping, and object destructuring.
+It uses sytactic features made possible by :pep:`617`, which
+introduced a more powerful method of parsing Python source code.
 
 
 Rationale and Goals
