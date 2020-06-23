@@ -27,7 +27,7 @@ def convert_field(self, value, conversion):
     # do any conversion on the resulting object
     match conversion:
         case None:
-            return None
+            return value
         case 's':
             return str(value)
         case 'r':
