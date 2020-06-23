@@ -1,6 +1,6 @@
 # Pattern Matching
 
-This repo contains a [draft PEP](pep-9999.rst) proposing a `match`
+This repo contains a [draft PEP](pep-0622.rst) proposing a `match`
 statement.
 
 Origins
@@ -91,7 +91,7 @@ match point:
 
 Study that one carefully!  The first pattern has two literals, and can
 be thought of as an extension of the literal pattern shown above.  But
-the second two patterns combine a literal and a variable, and the
+the next two patterns combine a literal and a variable, and the
 variable is *extracted* from the target value (`point`).  The fourth
 pattern is a double extraction, which makes it conceptually similar to
 the unpacking assignment `(x, y) = point`.
@@ -203,4 +203,4 @@ Several other key features:
 
 - Classes can customize how they are matched by defining a
   `__match__()` method.
-  Read the [PEP](pep-9999.rst#runtime-specification) for details.
+  Read the [PEP](pep-0622.rst#runtime-specification) for details.
