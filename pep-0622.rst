@@ -1,4 +1,4 @@
-PEP: 9999
+PEP: 622
 Title: Structural Pattern Matching
 Version: $Revision$
 Last-Modified: $Date$
@@ -1350,38 +1350,6 @@ is rarely useful (in languages which support it) or used as double negation
 not apply to Python). It can also be simulated using guard conditions.
 
 
-Send some pattern context to ``__match__()`` method
----------------------------------------------------
-
-The current specification for ``__match__()`` protocol prescribes that we
-don't pass any pattern context there. There was an idea to send partial
-context like literals only, or custom pattern objects that will provide
-the full context. For example the below match would generate the following
-call::
-
-  match expr:
-      case BinaryOp(left=Number(value=x), op=op, right=Number(value=y)):
-          ...
-
-  from types import PatternObject
-  BinaryOp.__match__(
-      (),
-      {
-          "left": PatternObject(Number, (), {"value": ...}, -1, False),
-          "op": ...,
-          "right": PatternObject(Number, (), {"value": ...}, -1, False),
-      },
-      -1,
-      False,
-  )
-
-This would allow faster ``__match__()`` implementations and give better
-support for customization in user-defined classes. There is however a big
-downside to this: it would make the basic implementation of this method quite
-complicated. Also, there would be a performance penalty if the user did not
-treat the pattern object properly.
-
-
 Check exhaustiveness at runtime
 -------------------------------
 
@@ -1562,6 +1530,32 @@ The authors of this PEP expect that the ``match`` statement will evolve
 over time as usage patterns and idioms evolve, in a way similar to what
 other "multi-stage" PEPs have done in the past. When this happens, the
 extended matching issue can be revisited.
+
+There was an idea to send partial context like literals only, or
+custom pattern objects that will provide the full context. For example
+the below match would generate the following call::
+
+  match expr:
+      case BinaryOp(left=Number(value=x), op=op, right=Number(value=y)):
+          ...
+
+  from types import PatternObject
+  BinaryOp.__match__(
+      (),
+      {
+          "left": PatternObject(Number, (), {"value": ...}, -1, False),
+          "op": ...,
+          "right": PatternObject(Number, (), {"value": ...}, -1, False),
+      },
+      -1,
+      False,
+  )
+
+This would allow faster ``__match__()`` implementations and give better
+support for customization in user-defined classes. There is however a big
+downside to this: it would make the basic implementation of this method quite
+complicated. Also, there would be a performance penalty if the user did not
+treat the pattern object properly.
 
 
 Parameterized Matching Syntax
