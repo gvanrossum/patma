@@ -1,4 +1,5 @@
-# Pattern Matching
+Pattern Matching
+================
 
 This repo contains a [draft PEP](pep-0622.rst) proposing a `match`
 statement.
