@@ -1,5 +1,5 @@
 PEP: 9999
-Title: Pattern matching
+Title: Structural Pattern Matching
 Version: $Revision$
 Last-Modified: $Date$
 Author: Brandt Bucher <brandtbucher@gmail.com>,
@@ -12,25 +12,26 @@ Discussions-To: Python-Dev <python-dev@python.org>
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
-Created: 2020-05-04
+Created: 23-Jun-2020
 Python-Version: 3.10
+Post-History: 23-Jun-2020
 Resolution:
+
 
 Abstract
 ========
 
-This PEP proposes to add pattern matching statements [1]_ to Python. This will
-allow more readable and reliable code when dealing with structured
-heterogeneous data. The PEP takes a holistic approach and contains syntax
-specification, runtime specification, and recommended specification for static
-type checkers.
+This PEP proposes adding pattern matching statements [1]_ to Python in order to
+create more expressive ways of dealing with structured heterogeneous data.  The
+authors take a holistic approach, providing both static and runtime
+specifications.
 
-Previously PEP 275 and PEP 3103 that proposed similar constructs were
-rejected. Here we choose a different approach and focus on generalizing
-iterable and dictionary unpacking instead of syntax-sugaring and optimizing
-``if ... elif ... else`` statement. Also, the recently implemented PEP 617
-that introduced a new PEG parser for Python now allows more flexible syntactic
-options.
+:pep:`275` and :pep:`3103` previously proposed similar constructs, and were
+rejected.  Instead of targeting the optimization of ``if ... elif ... else``
+statements (as those PEPs did), this design focuses on generalizing sequence,
+mapping, and object destructuring.  It uses sytactic features made possible by
+:pep:`617`, which introduced a more powerful method of parsing Python source
+code.
 
 
 Rationale and Goals
