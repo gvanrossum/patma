@@ -30,7 +30,7 @@ both static and runtime specifications.
 were rejected.  Instead of targeting the optimization of
 ``if ... elif ... else`` statements (as those PEPs did), this design
 focuses on generalizing sequence, mapping, and object destructuring.
-It uses sytactic features made possible by :pep:`617`, which
+It uses syntactic features made possible by :pep:`617`, which
 introduced a more powerful method of parsing Python source code.
 
 
@@ -67,7 +67,7 @@ This is in contrast with the opposite sides of both aspects:
 
 This PEP aims at improving the support for destructuring heterogeneous data
 by adding a dedicated syntactic support for it in the form of pattern matching.
-On very high level it is similar to regular expressions, but instead of
+On a very high level it is similar to regular expressions, but instead of
 matching strings, it will be possible to match arbitrary Python objects.
 
 We believe this will improve both readability and reliability of relevant code.
@@ -157,9 +157,10 @@ many languages it is an expression, being a statement better suits the general
 logic of Python syntax. See `rejected ideas`_ for more discussion. The list of
 allowed patterns is specified below in the `patterns`_ subsection.
 
-The ``match`` word is proposed to be a soft keyword, so that it is recognized
-as a keyword at the beginning of a match statement, but is allowed to be used in
-other places as a variable or argument name.
+The ``match`` and ``case`` keywords are proposed to be soft keywords,
+so that they are recognized as keywords at the beginning of a match
+statement or case block respectively, but are allowed to be used in
+other places as variable or argument names.
 
 The proposed indentation structure is as following::
 
@@ -236,7 +237,7 @@ literals for the purpose of pattern matching. Unary plus is not allowed.
 Binary plus and minus are allowed only to join a real number and an imaginary
 number to form a complex number, such as ``1+1j``.
 
-Raw strings and byte strings
+Triple-quoted strings are supported.  Raw strings and byte strings
 are supported. F-strings are not allowed (since in general they are not
 really literals).
 
@@ -473,7 +474,7 @@ Guards
 
 Each *top-level* pattern can be followed by a guard of the form
 ``if expression``. A case clause succeeds if the pattern matches and the guard
-evaluates to true value. For example::
+evaluates to a true value. For example::
 
   match input:
       case [x, y] if x > MAX_INT and y > MAX_INT:
@@ -544,9 +545,15 @@ Runtime specification
 The ``__match__()`` protocol
 ----------------------------
 
-The ``__match__()`` method is used to decide whether an object matches a given
-class pattern and to extract the corresponding attributes. The procedure is as
-following:
+TODO: Show equivalent pseudo code.
+
+The ``__match__()`` method is used to decide whether an object matches
+a given class pattern and to extract the corresponding attributes.  It
+must be a class method or a static method returning an object
+(typically the same as the argument), or ``None`` to indicate that no
+match is possible.  (More about the return value in the next section.)
+
+The procedure is as following:
 
 * The class object for ``Class`` in ``Class(<sub-patterns>)`` is looked up and
   ``Class.__match__(obj)`` is called where ``obj`` is the value being matched.
@@ -684,7 +691,7 @@ required.
 
 
 The standard library
-------------------------------------
+--------------------
 
 To facilitate the use of pattern matching, several changes will be made to
 the standard library:
@@ -818,7 +825,7 @@ this example::
       target: str
       value: Expression
 
-  @dataclasses
+  @dataclass
   class Print(Statement):
       value: Expression
 
@@ -843,7 +850,7 @@ Type erasure
 
 Class patterns are subject to runtime type erasure. Namely, although one
 can define a type alias ``IntQueue = Queue[int]`` so that a pattern like
-``IntQueue()`` is syntactically valid, type checkers should rejected such
+``IntQueue()`` is syntactically valid, type checkers should reject such a
 match::
 
   queue: Union[Queue[int], Queue[str]]
@@ -1030,7 +1037,7 @@ to identify widely-used parsing libraries (such as parso [10]_ and libCST [11]_)
 and upgrade them to be PEG compatible.
 
 However, since this work would need to be done not only for the match statement,
-but for *any* new Python syntax that leverages the capbilities of the PEG parser,
+but for *any* new Python syntax that leverages the capabilities of the PEG parser,
 it is considered out of scope for this PEP. (Although it is suggested that this
 would make a fine Summer of Code project.)
 
@@ -1056,9 +1063,9 @@ A small collection of example code is
 Rejected Ideas
 ==============
 
-This general idea was floating around for pretty long time, and many
+This general idea has been floating around for a pretty long time, and many
 back and forth decisions were made. Here we summarize many alternative
-paths that were taken, but abandoned after all.
+paths that were taken but eventually abandoned.
 
 Don't do this, pattern matching is hard to learn
 ------------------------------------------------
@@ -1154,8 +1161,10 @@ alleviated by allowing "half-indent" (i.e. two spaces instead of four) for
 match statements.
 
 In sample programs using `match`, written as part of the development of this
-PEP, a noticable improvement in code brevity is observed, more than making up
+PEP, a noticeable improvement in code brevity is observed, more than making up
 for the additional indentation level.
+
+TODO: flat indentation with "match: expression" at the top.
 
 
 Alternatives for constant value pattern
@@ -1576,7 +1585,7 @@ values in deciding what was a valid match.
 
 This would allow patterns such as ``InRange<0, 6>(value)``, which would match
 a number in the range 0..6 and assign the matched value to 'value'. Similarly,
-one could have a pattern which tests for the existince of a named group in
+one could have a pattern which tests for the existence of a named group in
 a regular expression match result (different meaning of the word 'match').
 
 Although there is some support for this idea, there was a lot of bikeshedding
