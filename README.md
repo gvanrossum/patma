@@ -1,8 +1,10 @@
 Pattern Matching
 ================
 
-This repo contains a [draft PEP](pep-0622.rst) proposing a `match`
-statement.
+This repo contains an issue tracker, examples, and early work related to
+[PEP 622: Structural Pattern Matching](https://www.python.org/dev/peps/pep-0622).
+Updates to the PEP itself should be made in the
+[PEPs repo](https://github.com/python/peps).
 
 Origins
 -------
@@ -26,9 +28,9 @@ Implementation
 --------------
 
 A full reference implementation written by Brandt Bucher is available
-as a [fork]((https://github.com/brandtbucher/cpython/tree/patma)) of
+as a [fork](https://github.com/brandtbucher/cpython/tree/patma) of
 the CPython repo.  This is readily converted to a [pull
-request](https://github.com/brandtbucher/cpython/pull/2)).
+request](https://github.com/brandtbucher/cpython/pull/2).
 
 Examples
 --------
@@ -204,4 +206,4 @@ Several other key features:
 
 - Classes can customize how they are matched by defining a
   `__match__()` method.
-  Read the [PEP](pep-0622.rst#runtime-specification) for details.
+  Read the [PEP](https://www.python.org/dev/peps/pep-0622/#runtime-specification) for details.
