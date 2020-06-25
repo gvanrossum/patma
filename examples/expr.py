@@ -2,8 +2,10 @@
 import re
 import sys
 import tokenize
+from dataclasses import dataclass
 from enum import Enum
 from collections import namedtuple
+from typing import Any
 
 class TokenStream:
     """Class representing a consumable stream of input tokens"""
@@ -67,26 +69,17 @@ class BinaryOp:
     def __repr__(self):
         return f"({repr(self.left)} {self.op} {repr(self.right)})"
 
+# Illustration of how matching works with dataclasses
+@dataclass
 class UnaryOp:
     """A unary operator expression."""
-    __match_args__ = ["op", "arg"]
+    op: str
+    arg: Any
 
-    def __init__(self, op, arg):
-        self.op = op
-        self.arg = arg
-
-    def __repr__(self):
-        return f"({self.op} {repr(self.arg)})"
-
+@dataclass
 class VarExpr:
     """A reference to a variable."""
-    __match_args__ = ["name"]
-
-    def __init__(self, name):
-        self.name = name
-
-    def __repr__(self):
-        return self.name
+    name: str
 
 def parse_expr(tokstream: TokenStream):
     """Parse an expression."""
