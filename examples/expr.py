@@ -1,9 +1,10 @@
 # Sample program that incorporates many uses of `match`.
+from collections import namedtuple
+from dataclasses import dataclass
+from enum import Enum
 import re
 import sys
 import tokenize
-from enum import Enum
-from collections import namedtuple
 
 class TokenStream:
     """Class representing a consumable stream of input tokens"""
@@ -67,23 +68,20 @@ class BinaryOp:
     def __repr__(self):
         return f"({repr(self.left)} {self.op} {repr(self.right)})"
 
+@dataclass
 class UnaryOp:
     """A unary operator expression."""
-    __match_args__ = ["op", "arg"]
-
-    def __init__(self, op, arg):
-        self.op = op
-        self.arg = arg
+    op: str
+    arg: object
 
     def __repr__(self):
         return f"({self.op} {repr(self.arg)})"
 
+@dataclass
 class VarExpr:
     """A reference to a variable."""
-    __match_args__ = ["name"]
 
-    def __init__(self, name):
-        self.name = name
+    name: str
 
     def __repr__(self):
         return self.name
