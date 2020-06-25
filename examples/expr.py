@@ -6,6 +6,13 @@ import re
 import sys
 import tokenize
 
+LPAR = "("
+RPAR = ")"
+STAR = "*"
+SLASH = "/"
+PLUS = "+"
+MINUS = "-"
+
 class TokenStream:
     """Class representing a consumable stream of input tokens"""
     def __init__(self, input):
@@ -21,7 +28,7 @@ class TokenStream:
                 match [token.type, token.string]:
                     case [tokenize.NEWLINE, ?]:
                         continue
-                    case [tokenize.OP, "("|")"]:
+                    case [tokenize.OP, LPAR | RPAR]:
                         self.token = (tokenize.EXACT_TOKEN_TYPES[token.string], token.string)
                     case ?:
                         self.token = (token.type, token.string)
@@ -53,10 +60,10 @@ class BinaryOp:
     __match_args__ = ["op", "left", "right"]
 
     PRECEDENCE = {
-        '+': 3,
-        '-': 3,
-        '*': 4,
-        '/': 4,
+        PLUS: 3,
+        MINUS: 3,
+        STAR: 4,
+        SLASH: 4,
     }
 
     def __init__(self, op, left, right):
@@ -127,11 +134,11 @@ def parse_binop(tokstream: TokenStream):
     # Simple operator precedence parser
     while tokstream.token_type != tokenize.ENDMARKER:
         match tokstream.token:
-            case [tokenize.OP, value := "*"|"/"]:
+            case [tokenize.OP, value := STAR | SLASH]:
                 reduce(4)
                 tokstream.next()
                 opstack.append(OpStackEntry(value, 4))
-            case [tokenize.OP, value := "+"|"-"]:
+            case [tokenize.OP, value := PLUS | MINUS]:
                 reduce(3)
                 tokstream.next()
                 opstack.append(OpStackEntry(value, 3))
@@ -153,7 +160,7 @@ def parse_binop(tokstream: TokenStream):
 def parse_unop(tokstream: TokenStream):
     """Parse unary operator."""
     match tokstream.token:
-        case [tokenize.OP, value := "+"|"-"]:
+        case [tokenize.OP, value := PLUS | MINUS]:
             tokstream.next()
             arg = parse_unop(tokstream)
             if arg is None:
@@ -195,7 +202,7 @@ def parse_primary(tokstream: TokenStream):
 def format_expr(expr, precedence=0):
     """Format an expression as a string."""
     match expr:
-        case BinaryOp(?op, ?left, ?right):
+        case BinaryOp(op?, left?, right?):
             result = \
                 f"{format_expr(left, expr.precedence)} {op} {format_expr(right, expr.precedence+1)}"
             # Surround the result in parentheses if needed
@@ -203,9 +210,9 @@ def format_expr(expr, precedence=0):
                 return f"({result})"
             else:
                 return result
-        case UnaryOp(?op, ?arg):
+        case UnaryOp(op?, arg?):
             return f"{op}{format_expr(arg, 0)}"
-        case VarExpr(?name):
+        case VarExpr(name?):
             return name
         case float() | int():
             return str(expr)
@@ -215,15 +222,15 @@ def format_expr(expr, precedence=0):
 def format_expr_tree(expr, indent=""):
     """Format an expression as a hierarchical tree."""
     match expr:
-        case BinaryOp(?op, ?left, ?right):
+        case BinaryOp(op?, left?, right?):
             return (f"{indent}({op}\n"
                 + format_expr_tree(left, indent + "  ") + "\n"
                 + format_expr_tree(right, indent + "  ") + ")")
-        case UnaryOp(?op, ?arg):
+        case UnaryOp(op?, arg?):
             return f"{indent}({op}\n" + format_expr_tree(arg, indent + "  ") + ")"
         case float() | int():
             return f"{indent}{expr}"
-        case VarExpr(?name):
+        case VarExpr(name?):
             return f"{indent}{name}"
         case ?:
             raise ValueError(f"Invalid expression value: {repr(expr)}")
@@ -231,19 +238,19 @@ def format_expr_tree(expr, indent=""):
 def eval_expr(expr):
     """Evaluate an expression and return the result."""
     match expr:
-        case BinaryOp('+', ?left, ?right):
+        case BinaryOp(PLUS, left?, right?):
             return eval_expr(left) + eval_expr(right)
-        case BinaryOp('-', ?left, ?right):
+        case BinaryOp(MINUS, left?, right?):
             return eval_expr(left) - eval_expr(right)
-        case BinaryOp('*', ?left, ?right):
+        case BinaryOp(STAR, left?, right?):
             return eval_expr(left) * eval_expr(right)
-        case BinaryOp('/', ?left, ?right):
+        case BinaryOp(SLASH, left?, right?):
             return eval_expr(left) / eval_expr(right)
-        case UnaryOp('+', ?arg):
+        case UnaryOp(PLUS, arg?):
             return eval_expr(arg)
-        case UnaryOp('-', ?arg):
+        case UnaryOp(MINUS, arg?):
             return -eval_expr(arg)
-        case VarExpr(?name):
+        case VarExpr(name?):
             raise ValueError(f"Unknown value of: {name}")
         case float() | int():
             return expr
@@ -253,34 +260,34 @@ def eval_expr(expr):
 def simplify_expr(expr):
     """Simplify an expression by folding constants and removing identities."""
     match expr:
-      case BinaryOp(?op, ?left, ?right):
+      case BinaryOp(op?, left?, right?):
           left = simplify_expr(left)
           right = simplify_expr(right)
           match (op, left, right):
               case [?, float() | int(), float() | int()]:
                   return eval_expr(BinaryOp(op, left, right))
-              case ['+', 0, ?] | ['*', 1, ?]:
+              case [PLUS, 0, ?] | [STAR, 1, ?]:
                   return right
-              case ['+' | '-', ?, 0] | ['*' | '/', ?, 1]:
+              case [PLUS | MINUS, ?, 0] | [STAR | SLASH, ?, 1]:
                   return left
-              case ['-', 0, ?]:
-                  return UnaryOp('-', right)
-              case ['*', 0, ?] | ['*', ?, 0]:
+              case [MINUS, 0, ?]:
+                  return UnaryOp(MINUS, right)
+              case [STAR, 0, ?] | [STAR, ?, 0]:
                   return 0
               case ?:
                   return BinaryOp(op, left, right)
-      case UnaryOp(?op, ?arg):
+      case UnaryOp(op?, arg?):
           arg = simplify_expr(arg)
           match (op, arg):
-              case ['+', ?]:
+              case [PLUS, ?]:
                   return arg
-              case ['-', UnaryOp('-', ?arg2)]:
+              case [MINUS, UnaryOp(MINUS, arg2?)]:
                   return arg2
-              case ['-', float() | int()]:
+              case [MINUS, float() | int()]:
                   return -arg
               case ?:
                   return UnaryOp(op, arg)
-      case VarExpr(?name):
+      case VarExpr(name?):
           return expr
       case float() | int():
           return expr
