@@ -19,11 +19,11 @@ class TokenStream:
             try:
                 token = next(self.stream)
                 match [token.type, token.string]:
-                    case [tokenize.NEWLINE, _]:
+                    case [tokenize.NEWLINE, ?]:
                         continue
                     case [tokenize.OP, "("|")"]:
                         self.token = (tokenize.EXACT_TOKEN_TYPES[token.string], token.string)
-                    case _:
+                    case ?:
                         self.token = (token.type, token.string)
                 self.pos = token.start[1]
                 break
@@ -136,7 +136,7 @@ def parse_binop(tokstream: TokenStream):
                 tokstream.next()
                 opstack.append(OpStackEntry(value, 3))
             # TODO: Support power
-            case _:
+            case ?:
                 break
 
         # Parse the right-hand side
@@ -189,13 +189,13 @@ def parse_primary(tokstream: TokenStream):
           else:
               tokstream.syntax("Closing paren expected")
               return None
-      case _:
+      case ?:
           return None
 
 def format_expr(expr, precedence=0):
     """Format an expression as a string."""
     match expr:
-        case BinaryOp(op, left, right):
+        case BinaryOp(?op, ?left, ?right):
             result = \
                 f"{format_expr(left, expr.precedence)} {op} {format_expr(right, expr.precedence+1)}"
             # Surround the result in parentheses if needed
@@ -203,88 +203,88 @@ def format_expr(expr, precedence=0):
                 return f"({result})"
             else:
                 return result
-        case UnaryOp(op, arg):
+        case UnaryOp(?op, ?arg):
             return f"{op}{format_expr(arg, 0)}"
-        case VarExpr(name):
+        case VarExpr(?name):
             return name
         case float() | int():
             return str(expr)
-        case _:
+        case ?:
             raise ValueError(f"Invalid expression value: {repr(expr)}")
 
 def format_expr_tree(expr, indent=""):
     """Format an expression as a hierarchical tree."""
     match expr:
-        case BinaryOp(op, left, right):
+        case BinaryOp(?op, ?left, ?right):
             return (f"{indent}({op}\n"
                 + format_expr_tree(left, indent + "  ") + "\n"
                 + format_expr_tree(right, indent + "  ") + ")")
-        case UnaryOp(op, arg):
+        case UnaryOp(?op, ?arg):
             return f"{indent}({op}\n" + format_expr_tree(arg, indent + "  ") + ")"
         case float() | int():
             return f"{indent}{expr}"
-        case VarExpr(name):
+        case VarExpr(?name):
             return f"{indent}{name}"
-        case _:
+        case ?:
             raise ValueError(f"Invalid expression value: {repr(expr)}")
 
 def eval_expr(expr):
     """Evaluate an expression and return the result."""
     match expr:
-        case BinaryOp('+', left, right):
+        case BinaryOp('+', ?left, ?right):
             return eval_expr(left) + eval_expr(right)
-        case BinaryOp('-', left, right):
+        case BinaryOp('-', ?left, ?right):
             return eval_expr(left) - eval_expr(right)
-        case BinaryOp('*', left, right):
+        case BinaryOp('*', ?left, ?right):
             return eval_expr(left) * eval_expr(right)
-        case BinaryOp('/', left, right):
+        case BinaryOp('/', ?left, ?right):
             return eval_expr(left) / eval_expr(right)
-        case UnaryOp('+', arg):
+        case UnaryOp('+', ?arg):
             return eval_expr(arg)
-        case UnaryOp('-', arg):
+        case UnaryOp('-', ?arg):
             return -eval_expr(arg)
-        case VarExpr(name):
+        case VarExpr(?name):
             raise ValueError(f"Unknown value of: {name}")
         case float() | int():
             return expr
-        case _:
+        case ?:
             raise ValueError(f"Invalid expression value: {repr(expr)}")
 
 def simplify_expr(expr):
     """Simplify an expression by folding constants and removing identities."""
     match expr:
-      case BinaryOp(op, left, right):
+      case BinaryOp(?op, ?left, ?right):
           left = simplify_expr(left)
           right = simplify_expr(right)
           match (op, left, right):
-              case [_, float() | int(), float() | int()]:
+              case [?, float() | int(), float() | int()]:
                   return eval_expr(BinaryOp(op, left, right))
-              case ['+', 0, _] | ['*', 1, _]:
+              case ['+', 0, ?] | ['*', 1, ?]:
                   return right
-              case ['+' | '-', _, 0] | ['*' | '/', _, 1]:
+              case ['+' | '-', ?, 0] | ['*' | '/', ?, 1]:
                   return left
-              case ['-', 0, _]:
+              case ['-', 0, ?]:
                   return UnaryOp('-', right)
-              case ['*', 0, _] | ['*', _, 0]:
+              case ['*', 0, ?] | ['*', ?, 0]:
                   return 0
-              case _:
+              case ?:
                   return BinaryOp(op, left, right)
-      case UnaryOp(op, arg):
+      case UnaryOp(?op, ?arg):
           arg = simplify_expr(arg)
           match (op, arg):
-              case ['+', _]:
+              case ['+', ?]:
                   return arg
-              case ['-', UnaryOp('-', arg2)]:
+              case ['-', UnaryOp('-', ?arg2)]:
                   return arg2
               case ['-', float() | int()]:
                   return -arg
-              case _:
+              case ?:
                   return UnaryOp(op, arg)
-      case VarExpr(name):
+      case VarExpr(?name):
           return expr
       case float() | int():
           return expr
-      case _:
+      case ?:
           raise ValueError(f"Invalid expression value: {repr(expr)}")
 
 def main():
@@ -327,7 +327,7 @@ def main():
                     expr = parse_expr(tokstream)
                     if expr is not None:
                         print(format_expr(simplify_expr(expr)))
-                case _:
+                case ?:
                     print(f"Unknown command: {command}")
         else:
             print("Command expected")
