@@ -1,0 +1,24 @@
+# Python3 build dependencies, generated via (note that to run this, apt-rdepends
+# needs to be installed first):
+# apt-rdepends --build-depends --follow=DEPENDS python3-defaults | grep Build-Depends | awk -F ' +' '{print $3}'
+
+debhelper
+docbook-xml
+docbook-xsl
+dpkg-dev
+lsb-release
+python3-docutils
+python3-minimal
+python3.8
+w3m
+xsltproc
+
+# Working tools for minimal dev work
+
+build-essential
+emacs-nox
+vim-tiny
+git
+python3
+python3-dev
+ca-certificates
