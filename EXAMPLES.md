@@ -261,9 +261,9 @@ def optional_value_type(rtype: RType) -> Optional[RType]:
     Otherwise return None.
     """
     match rtype:
-        case RUnion(items=[none_rprimitive, b]):
+        case RUnion(items=[.none_rprimitive, b]):
             return b
-        case RUnion(items=[a, none_rprimitive]):
+        case RUnion(items=[a, .none_rprimitive]):
             return a
         case _:
             return None
