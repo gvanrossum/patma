@@ -5,7 +5,7 @@
 # More here: https://www.python.org/dev/peps/pep-0622
 
 # Get correct branch of CPython to test PEP 622 with
-#git clone https://github.com/brandtbucher/cpython.git
+git clone https://github.com/brandtbucher/cpython.git
 cd cpython
 git checkout --track remotes/origin/patma
 
