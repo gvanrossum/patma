@@ -22,7 +22,7 @@ rm $HOME/.local/bin/python3
 ln -s $HOME/.local/bin/python3.10 $HOME/.local/bin/py10
 
 # Add the patma repo requirements packages so the repo is ready to use
-python3.10 -m pip install -r $HOME/patma/requirements.pip
+python3.10 -m pip install -r $HOME/requirements.pip
 
 
 # END - possible improvements for later below.
