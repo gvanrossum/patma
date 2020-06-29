@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Binder repo post-build script to deploy the resulting container with a custom
+# build of Python 3.10 that can be used to test PEP 622.
+# More here: https://www.python.org/dev/peps/pep-0622
+
+# Get correct branch of CPython to test PEP 622 with
+#git clone https://github.com/brandtbucher/cpython.git
+cd cpython
+git checkout --track remotes/origin/patma
+
+# Build Python to go into $HOME/.local
+export $PATH=$HOME/.local/bin:$PATH
+
+# The usual `onfigure, make, make install` dance
+./configure --prefix=$HOME/.local && make -j && make install
+
+# Remove the 'python3' binary to avoid accidental collisions with
+# the system one. This python will only be accessible as 'python3.10'
+# or via the convenience alias 'py10'
+rm $HOME/.local/bin/python3
+ln -s $HOME/.local/bin/python3.10 $HOME/.local/bin/py10
+
+# Add the patma repo requirements packages so the repo is ready to use
+python3.10 -m pip install -r $HOME/patma/requirements.pip
+
+
+# END - possible improvements for later below.
+
+# TODO: Install Python as kernel and put IPython on it.  This doesn't
+# actually work yet (Jun 29, 2020) b/c pyzmq doesn't yet build against
+# Python 3.10alpha0. So for now we'll leave it off and we can revisit
+# later. We can still use the JupyterLab environment as a convenient
+# set of tools to play with this build and the patma repo.
+
+#PY310=$HOME/.local/bin/python3.10
+#$PY310 -m pip install ipykernel
+#$PY310 -m ipykernel install --user
