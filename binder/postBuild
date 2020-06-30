@@ -45,4 +45,4 @@ echo 'alias python=py10' >> ~/.bashrc
 
 
 # Setup a workspace
-jupyter lab workspaces import binder/workspace.json
+jupyter lab workspaces import ~/binder/workspace.json
