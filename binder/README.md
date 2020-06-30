@@ -12,6 +12,8 @@ This directory contains all the necessary tools for Binder support, all other co
 
 Since testing the pattern matching features requires a custom Python build, we start from a standard Binder image and then build Python 3.10 in the container. Python 3.10 is new enough that we can't yet have a 3.10-based kernel for Jupyter, as Pyzmq (as of Jun 29, 2020) doesn't yet build on it. But we can still use 3.10 at the command-line to test the examples, and take advantage of the JupyterLab UI for easy experimentation (terminals, text editors, etc).
 
+The [experimental build of CPython 3.10](https://github.com/brandtbucher/cpython) (branch `patma`) needed for this is installed in `$HOME/.local/bin`, and the source of the build is available in `/tmp/cpython`, in case the user wants to experiment with it.
+
 The build dependencies listed in apt.txt can be found by using the `apt-rdepends` package:
 
 ```
