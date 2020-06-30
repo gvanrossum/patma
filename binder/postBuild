@@ -40,3 +40,9 @@ python3.10 -m pip install git+https://github.com/zeromq/pyzmq
 #PY310=$HOME/.local/bin/python3.10
 python3.10 -m pip install ipykernel
 python3.10 -m ipykernel install --user
+
+echo 'alias python=py10' >> ~/.bashrc
+
+
+# Setup a workspace
+jupyter lab workspaces import binder/workspace.json
