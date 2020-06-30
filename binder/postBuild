@@ -26,7 +26,7 @@ ln -s $HOME/.local/bin/python3.10 $HOME/.local/bin/py10
 python3.10 -m pip install -r $HOME/requirements.pip
 python3.10 -m pip install git+https://github.com/ipython/ipython
 python3.10 -m pip install Cython 
-python3.10 -m pip install git+https://github.com/zmq/pyzmq
+python3.10 -m pip install git+https://github.com/zeromq/pyzmq
 
 
 # END - possible improvements for later below.
