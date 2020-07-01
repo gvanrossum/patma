@@ -1,6 +1,8 @@
 Pattern Matching
 ================
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gvanrossum/patma/master?urlpath=lab/tree/playground-622.ipynb)
+
 This repo contains an issue tracker, examples, and early work related to
 [PEP 622: Structural Pattern Matching](https://www.python.org/dev/peps/pep-0622).
 Updates to the PEP itself should be made in the

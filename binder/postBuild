@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Update to a current JupyterLab for a better user experience
+conda update jupyterlab
+
+# Binder repo post-build script to deploy the resulting container with a custom
+# build of Python 3.10 that can be used to test PEP 622.
+# More here: https://www.python.org/dev/peps/pep-0622
+
+# Get correct branch of CPython to test PEP 622 with
+cd /tmp
+git clone https://github.com/brandtbucher/cpython.git
+cd cpython
+git checkout --track remotes/origin/patma
+
+# Build Python to go into $HOME/.local
+export $PATH=$HOME/.local/bin:$PATH
+
+# The usual `onfigure, make, make install` dance
+./configure --prefix=$HOME/.local && make -j && make install
+
+# Remove the 'python3' binary to avoid accidental collisions with the system
+# one. On the filesystem, this python will only be accessible as 'python3.10'
+# or via the convenience symlink 'py10'. 
+rm $HOME/.local/bin/python3
+ln -s $HOME/.local/bin/python3.10 $HOME/.local/bin/py10
+
+# For interactive usage we also make 'python' point to the new 3.10
+echo 'alias python=python3.10' >> ~/.bashrc
+
+# Add the patma repo requirements packages so the repo is ready to use
+python3.10 -m pip install -r $HOME/requirements.pip
+
+# Install IPython as kernel with our 3.10 Python. Note - currently this
+# requires builds from master of both ipython and pyzmq.
+python3.10 -m pip install git+https://github.com/ipython/ipython
+python3.10 -m pip install Cython 
+python3.10 -m pip install git+https://github.com/zeromq/pyzmq
+
+python3.10 -m pip install ipykernel
+python3.10 -m ipykernel install --user
+
+# Setup a workspace
+jupyter lab workspaces import ~/binder/workspace.json
