@@ -32,7 +32,8 @@ echo 'alias python=python3.10' >> ~/.bashrc
 python3.10 -m pip install -r $HOME/requirements.pip
 
 # Install IPython as kernel with our 3.10 Python. Note - currently this
-# requires builds from master of both ipython and pyzmq.
+# requires builds from master of both ipython and pyzmq, and parso (for jedi)
+python3.10 -m pip install git+https://github.com/davidhalter/parso
 python3.10 -m pip install git+https://github.com/ipython/ipython
 python3.10 -m pip install Cython 
 python3.10 -m pip install git+https://github.com/zeromq/pyzmq
