@@ -34,6 +34,9 @@ as a [fork](https://github.com/brandtbucher/cpython/tree/patma) of
 the CPython repo.  This is readily converted to a [pull
 request](https://github.com/brandtbucher/cpython/pull/2).
 
+For those who prefer not to build a CPython binary from source there's
+a Binder playground -- click the button at the top of this readme.
+
 Examples
 --------
 
@@ -47,7 +50,7 @@ patterns given as one or more `case` blocks.  This is superficially
 similar to a `switch` statement in C, Java or JavaScript (an many
 other languages), but much more powerful.
 
-The simplest form compares a target value against one or more literals:
+The simplest form compares a subject value against one or more literals:
 
 ```py
 def http_error(status):
@@ -80,7 +83,7 @@ Patterns can look like unpacking assignments, and can be used to bind
 variables:
 
 ```py
-# The target is an (x, y) tuple
+# The subject is an (x, y) tuple
 match point:
     case (0, 0):
         print("Origin")
@@ -97,13 +100,13 @@ match point:
 Study that one carefully!  The first pattern has two literals, and can
 be thought of as an extension of the literal pattern shown above.  But
 the next two patterns combine a literal and a variable, and the
-variable is *extracted* from the target value (`point`).  The fourth
-pattern is a double extraction, which makes it conceptually similar to
+variable *captures* a value from the subject (`point`).  The fourth
+pattern captures two values, which makes it conceptually similar to
 the unpacking assignment `(x, y) = point`.
 
 If you are using classes to structure your data (e.g. data classes)
 you can use the class name followed by an argument list resembling a
-constructor, but with the ability to extract variables:
+constructor, but with the ability to capture variables:
 
 ```py
 from dataclasses import dataclass
@@ -156,7 +159,7 @@ match points:
 
 We can add an `if` clause to a pattern, known as a "guard".  If the
 guard is false, `match` goes on to try the next `case` block.  Note
-that variable extraction happens before the guard is evaluated:
+that value capture happens before the guard is evaluated:
 
 ```py
 match point:
@@ -171,7 +174,7 @@ Several other key features:
 - Like unpacking assignments, tuple and list patterns have exactly the
   same meaning and actually match arbitrary sequences.  An important
   exception is that they don't match iterators or strings.
-  (Technically, the target must be an instance of
+  (Technically, the subject  must be an instance of
   `collections.abc.Sequence`.)
 
 - Sequence patterns support wildcards: `[x, y, *rest]` and `(x, y,
@@ -179,33 +182,37 @@ Several other key features:
   name after `*` may also be `_`, so `(x, y, *_)` matches a sequence
   of at least two items without binding the remaining items.
 
-- Mapping patterns: `{"bandwidth": b, "latency": l}` extracts the
+- Mapping patterns: `{"bandwidth": b, "latency": l}` captures the
   `"bandwidth"` and `"latency"` values from a dict.  Unlike sequence
   patterns, extra keys are ignored.  A wildcard `**rest` is also
   supported.  (But `**_` would be redundant, so it not allowed.)
 
-- Subpatterns may be extracted using the walrus (`:=`) operator:
+- Subpatterns may be captured using the walrus (`:=`) operator:
 
   ```py
   case (Point(x1, y1), p2 := Point(x2, y2)): ...
   ```
 
-- Patterns may use named constants.  These must be dotted names; a
-  single name can be made into a constant value by prefixing it with a
-  dot to prevent it from being interpreted as a variable extraction:
+- Patterns may use named constants.  These must be dotted names
+  to prevent them from being interpreted as capture variable:
 
   ```py
-  RED, GREEN, BLUE = 0, 1, 2
+  from enum import Enum
+  class Color(Enum):
+      RED = 0
+      GREEN = 1
+      BLUE = 2
 
   match color:
-      case .RED:
+      case Color.RED:
           print("I see red!")
-      case .GREEN:
+      case Color.GREEN:
           print("Grass is green")
-      case .BLUE:
+      case Color.BLUE:
           print("I'm feeling the blues :(")
   ```
 
-- Classes can customize how they are matched by defining a
-  `__match__()` method.
-  Read the [PEP](https://www.python.org/dev/peps/pep-0622/#runtime-specification) for details.
+- Classes may override the mapping from positional arguments to
+  attributes by setting a class variable `__match_args__`.
+  Read about it in the
+  [PEP](https://www.python.org/dev/peps/pep-0622/#special-attribute-match-args).

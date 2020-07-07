@@ -260,10 +260,11 @@ def optional_value_type(rtype: RType) -> Optional[RType]:
     """If rtype is the union of none_rprimitive and another type X, return X.
     Otherwise return None.
     """
+    class c: none_rprimitive = none_rprimitive  # Hack
     match rtype:
-        case RUnion(items=[.none_rprimitive, b]):
+        case RUnion(items=[c.none_rprimitive, b]):
             return b
-        case RUnion(items=[a, .none_rprimitive]):
+        case RUnion(items=[a, c.none_rprimitive]):
             return a
         case _:
             return None
