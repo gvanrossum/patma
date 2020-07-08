@@ -256,11 +256,13 @@ def optional_value_type(rtype: RType) -> Optional[RType]:
 Converted:
 
 ```
+from types import SimpleNamespace
+
 def optional_value_type(rtype: RType) -> Optional[RType]:
     """If rtype is the union of none_rprimitive and another type X, return X.
     Otherwise return None.
     """
-    class c: none_rprimitive = none_rprimitive  # Hack
+    c = SimpleNamespace(none_rprimitive=none_rprimitive)
     match rtype:
         case RUnion(items=[c.none_rprimitive, b]):
             return b
