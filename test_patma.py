@@ -5,7 +5,7 @@ import sys
 
 from typing import Dict, Optional
 
-import pytest
+import pytest  # type: ignore
 
 from patma import *
 
@@ -43,7 +43,7 @@ class MyClass:
     y: str
 
     @staticmethod
-    def __match__(target):
+    def __match__(target: object) -> object:
         if not isinstance(target, MyClass):
             return None
         return target
@@ -51,7 +51,7 @@ class MyClass:
     __match_args__ = ("x", "y")
 
 
-def test_constant_pattern():
+def test_constant_pattern() -> None:
     # case 42:
     pat = ConstantPattern(42)
     assert checks(pat, 42) == {}
@@ -60,7 +60,7 @@ def test_constant_pattern():
     assert checks(pat, "42") is None
 
 
-def test_constant_float_pattern():
+def test_constant_float_pattern() -> None:
     # case 42.0:
     pat = ConstantPattern(42.0)
     assert checks(pat, 42.0) == {}
@@ -69,7 +69,7 @@ def test_constant_float_pattern():
     assert checks(pat, 0) is None
 
 
-def test_alternatives_pattern():
+def test_alternatives_pattern() -> None:
     # case 1|2|3:
     pat = AlternativesPattern([ConstantPattern(i) for i in [1, 2, 3]])
     assert checks(pat, 1) == {}
@@ -81,7 +81,7 @@ def test_alternatives_pattern():
     assert checks(pat, "1") is None
 
 
-def test_fancy_alternatives_pattern():
+def test_fancy_alternatives_pattern() -> None:
     # case [1, 2] | [3, 4]:
     pat = AlternativesPattern(
         [
@@ -97,7 +97,7 @@ def test_fancy_alternatives_pattern():
     assert checks(pat, [1, 2.0]) is None
 
 
-def test_variable_pattern():
+def test_variable_pattern() -> None:
     # case x:
     pat = VariablePattern("x")
     assert checks(pat, 42) == {"x": 42}
@@ -105,14 +105,14 @@ def test_variable_pattern():
     assert checks(pat, None) == {"x": None}
 
 
-def test_annotated_pattern():
+def test_annotated_pattern() -> None:
     # case (x: int):
     pat = AnnotatedPattern(VariablePattern("x"), int)
     assert checks(pat, 42) == {"x": 42}
     assert checks(pat, "hello") is None
 
 
-def test_int_matches_float():
+def test_int_matches_float() -> None:
     # case (x: float):  # Should match int
     pat = AnnotatedPattern(VariablePattern("x"), float)
     match = pat.match(42)
@@ -120,13 +120,13 @@ def test_int_matches_float():
     assert type(match) == dict  # TODO: translate ditto
 
 
-def test_float_doesnt_match_int():
+def test_float_doesnt_match_int() -> None:
     # case (x: int):  # Shouldn't match 1.0
     pat = AnnotatedPattern(VariablePattern("x"), int)
     assert checks(pat, 1.0) is None
 
 
-def test_sequence_pattern():
+def test_sequence_pattern() -> None:
     # case (x, y, z):
     pat = SequencePattern([VariablePattern(s) for s in "xyz"])
     assert checks(pat, (1, 2, 3)) == {"x": 1, "y": 2, "z": 3}
@@ -141,7 +141,7 @@ def test_sequence_pattern():
     ## assert checks(pat, bytearray(b'abc')) is None
 
 
-def test_mapping_pattern():
+def test_mapping_pattern() -> None:
     # case {"x": x, "y": "z": z}:
     pat = MappingPattern(
         {
@@ -156,7 +156,7 @@ def test_mapping_pattern():
     assert checks(pat, {"x": "x", "y": "y"}) is None
 
 
-def test_instance_pattern():
+def test_instance_pattern() -> None:
     # case MyClass(xx: int, y='hello'):
     vxx = AnnotatedPattern(VariablePattern("xx"), int)
     hello = ConstantPattern("hello")
@@ -164,7 +164,7 @@ def test_instance_pattern():
     assert checks(pat, MyClass(42, "hello")) == {"xx": 42}
 
 
-def test_walrus_pattern():
+def test_walrus_pattern() -> None:
     # case x := (p, q):
     pat = WalrusPattern("x", SequencePattern([VariablePattern(s) for s in "pq"]))
     assert checks(pat, (1, 2)) == {"p": 1, "q": 2, "x": (1, 2)}
@@ -173,8 +173,8 @@ def test_walrus_pattern():
     assert checks(pat, (1, 2, 3)) is None
 
 
-def test_bindings():
-    p = ConstantPattern(42)
+def test_bindings() -> None:
+    p: Pattern = ConstantPattern(42)
     assert p.bindings() == p.bindings(False) == set()
 
     p = AlternativesPattern(

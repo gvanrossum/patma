@@ -1,5 +1,3 @@
-# mypy: disallow-untyped-defs
-
 import collections.abc as cabc
 import dataclasses
 import itertools
@@ -102,7 +100,7 @@ class Pattern:
         """
         raise NotImplementedError
 
-    def bindings(self, strict=True) -> Set[str]:
+    def bindings(self, strict: bool = True) -> Set[str]:
         """Compute set of variables bound by a pattern.
 
         The variable `_` is excluded from the result.
@@ -144,7 +142,7 @@ class ConstantPattern(Pattern):
         # TODO: complex
         return f"({target} == {self.constant!r})"
 
-    def bindings(self, strict=True) -> Set[str]:
+    def bindings(self, strict: bool = True) -> Set[str]:
         return set()
 
 
@@ -167,7 +165,7 @@ class AlternativesPattern(Pattern):
     def translate(self, target: str) -> str:
         return f"({' or '.join(p.translate(target) for p in self.patterns)})"
 
-    def bindings(self, strict=True) -> Set[str]:
+    def bindings(self, strict: bool = True) -> Set[str]:
         if not self.patterns:
             return set()
         result = self.patterns[0].bindings(strict)
@@ -199,7 +197,7 @@ class VariablePattern(Pattern):
     def translate(self, target: str) -> str:
         return f"({self.name} := {target},)"
 
-    def bindings(self, strict=True) -> Set[str]:
+    def bindings(self, strict: bool = True) -> Set[str]:
         if self.name == "_":
             return set()
         else:
@@ -238,7 +236,7 @@ class AnnotatedPattern(Pattern):
         # TODO: numeric tower
         return f"(isinstance({target}, {_full_class_name(self.cls)}) and {self.pattern.translate(target)})"
 
-    def bindings(self, strict=True) -> Set[str]:
+    def bindings(self, strict: bool = True) -> Set[str]:
         return self.pattern.bindings(strict)
 
 
@@ -273,8 +271,8 @@ class SequencePattern(Pattern):
         per_item = (p.translate(f"{target}[{i}]") for i, p in enumerate(self.patterns))
         return f"(isinstance({target}, Sequence) and len({target}) == {len(self.patterns)} and {' and '.join(per_item)})"
 
-    def bindings(self, strict=True) -> Set[str]:
-        result = set()
+    def bindings(self, strict: bool = True) -> Set[str]:
+        result: Set[str] = set()
         for p in self.patterns:
             b = p.bindings(strict)
             if strict and b & result:
@@ -318,8 +316,8 @@ class MappingPattern(Pattern):
         )
         return f"(isinstance({target}, Mapping) and {' and '.join(per_item)})"
 
-    def bindings(self, strict=True) -> Set[str]:
-        result = set()
+    def bindings(self, strict: bool = True) -> Set[str]:
+        result: Set[str] = set()
         for key, p in self.patterns.items():
             b = p.bindings(strict)
             if strict and b & result:
@@ -428,8 +426,8 @@ class InstancePattern(Pattern):
         joined = " and ".join(conditions)
         return f"({joined})"
 
-    def bindings(self, strict=True) -> Set[str]:
-        result = set()
+    def bindings(self, strict: bool = True) -> Set[str]:
+        result: Set[str] = set()
         for p in itertools.chain(self.posargs, self.kwargs.values()):
             b = p.bindings(strict)
             if strict and b & result:
@@ -461,7 +459,7 @@ class WalrusPattern(Pattern):
     def translate(self, target: str) -> str:
         return f"(({self.name} := {target},) if {self.pattern.translate(target)} else False)"
 
-    def bindings(self, strict=True) -> Set[str]:
+    def bindings(self, strict: bool = True) -> Set[str]:
         result = self.pattern.bindings(strict)
         if self.name != "_":
             if strict and self.name in result:
