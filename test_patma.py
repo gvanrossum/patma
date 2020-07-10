@@ -71,7 +71,7 @@ def test_constant_float_pattern() -> None:
 
 def test_alternatives_pattern() -> None:
     # case 1|2|3:
-    pat = AlternativesPattern([ValuePattern(i) for i in [1, 2, 3]])
+    pat = OrPattern([ValuePattern(i) for i in [1, 2, 3]])
     assert checks(pat, 1) == {}
     assert checks(pat, 2) == {}
     assert checks(pat, 3) == {}
@@ -83,7 +83,7 @@ def test_alternatives_pattern() -> None:
 
 def test_fancy_alternatives_pattern() -> None:
     # case [1, 2] | [3, 4]:
-    pat = AlternativesPattern(
+    pat = OrPattern(
         [
             SequencePattern([ValuePattern(1), ValuePattern(2)]),
             SequencePattern([ValuePattern(3), ValuePattern(4)]),
@@ -177,7 +177,7 @@ def test_bindings() -> None:
     p: Pattern = ValuePattern(42)
     assert p.bindings() == p.bindings(False) == set()
 
-    p = AlternativesPattern(
+    p = OrPattern(
         [ValuePattern(1), ValuePattern(2), ValuePattern(3)]
     )
     assert p.bindings() == p.bindings(False) == set()
@@ -188,10 +188,10 @@ def test_bindings() -> None:
     p = VariablePattern("abc")
     assert p.bindings() == p.bindings(False) == {"abc"}
 
-    p = AlternativesPattern([VariablePattern("a"), VariablePattern("a")])
+    p = OrPattern([VariablePattern("a"), VariablePattern("a")])
     assert p.bindings() == p.bindings(False) == {"a"}
 
-    p = AlternativesPattern([VariablePattern("a"), ValuePattern("a")])
+    p = OrPattern([VariablePattern("a"), ValuePattern("a")])
     assert p.bindings(False) == {"a"}
     with pytest.raises(InconsistentBindings):
         p.bindings()

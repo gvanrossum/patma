@@ -6,7 +6,7 @@ from typing import Dict, List, Mapping, Optional, Set, Type
 
 __all__ = [
     "Pattern",
-    "AlternativesPattern",
+    "OrPattern",
     "ValuePattern",
     "VariablePattern",
     "AnnotatedPattern",
@@ -146,7 +146,7 @@ class ValuePattern(Pattern):
         return set()
 
 
-class AlternativesPattern(Pattern):
+class OrPattern(Pattern):
     """A pattern consisting of several alternatives.
 
     This is a sequence of patterns separated by bars (``|``).
