@@ -160,7 +160,7 @@ def test_instance_pattern() -> None:
     # case MyClass(xx: int, y='hello'):
     vxx = AnnotatedPattern(CapturePattern("xx"), int)
     hello = ValuePattern("hello")
-    pat = InstancePattern(MyClass, [vxx], {"y": hello})
+    pat = ClassPattern(MyClass, [vxx], {"y": hello})
     assert checks(pat, MyClass(42, "hello")) == {"xx": 42}
 
 
@@ -215,22 +215,22 @@ def test_bindings() -> None:
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = InstancePattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("y")})
+    p = ClassPattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("y")})
     assert p.bindings() == p.bindings(False) == {"x", "y"}
 
-    p = InstancePattern(MyClass, [CapturePattern("x"), CapturePattern("x")], {})
+    p = ClassPattern(MyClass, [CapturePattern("x"), CapturePattern("x")], {})
     assert p.bindings(False) == {"x"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = InstancePattern(
+    p = ClassPattern(
         MyClass, [], {"x": CapturePattern("x"), "y": CapturePattern("x")}
     )
     assert p.bindings(False) == {"x"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = InstancePattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("x")})
+    p = ClassPattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("x")})
     assert p.bindings(False) == {"x"}
     with pytest.raises(DuplicateBindings):
         p.bindings()

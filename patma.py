@@ -12,7 +12,7 @@ __all__ = [
     "AnnotatedPattern",
     "SequencePattern",
     "MappingPattern",
-    "InstancePattern",
+    "ClassPattern",
     "WalrusPattern",
     "BindingsError",
     "InconsistentBindings",
@@ -215,6 +215,8 @@ def _full_class_name(cls: type) -> str:
 class AnnotatedPattern(Pattern):
     """A pattern involving a type annotation.
 
+    NOTE: This is not in PEP 622.
+
     For example, ``(x: int)``.
 
     TODO: This requires instantiating the Pattern object
@@ -339,7 +341,7 @@ def _get_stack_depth() -> int:
         i += 1
 
 
-class InstancePattern(Pattern):
+class ClassPattern(Pattern):
     """A pattern that matches a class instance.
 
     For example, ``MyClass(x, flag=y)``.  This extracts variables
