@@ -7,7 +7,7 @@ from typing import Dict, List, Mapping, Optional, Set, Type
 __all__ = [
     "Pattern",
     "AlternativesPattern",
-    "ConstantPattern",
+    "ValuePattern",
     "VariablePattern",
     "AnnotatedPattern",
     "SequencePattern",
@@ -95,7 +95,7 @@ class Pattern:
         The argument can be e.g. 'foo' or 'foo.bar' or 'foo.bar[0]'.
 
         Returns an expression that checks whether the target matches
-        the pattern, e.g.  for ConstantPattern(42), it could return
+        the pattern, e.g.  for ValuePattern(42), it could return
         '(foo == 42)'.
         """
         raise NotImplementedError
@@ -120,7 +120,7 @@ def _is_instance(x: object, t: type) -> bool:
     return isinstance(x, t) or (t is float and isinstance(x, int))
 
 
-class ConstantPattern(Pattern):
+class ValuePattern(Pattern):
     """A pattern that matches a given value.
 
     The matched value's type must be a subtype of the constant's type.

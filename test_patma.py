@@ -53,7 +53,7 @@ class MyClass:
 
 def test_constant_pattern() -> None:
     # case 42:
-    pat = ConstantPattern(42)
+    pat = ValuePattern(42)
     assert checks(pat, 42) == {}
     assert checks(pat, 0) is None
     assert checks(pat, 42.0) is None
@@ -62,7 +62,7 @@ def test_constant_pattern() -> None:
 
 def test_constant_float_pattern() -> None:
     # case 42.0:
-    pat = ConstantPattern(42.0)
+    pat = ValuePattern(42.0)
     assert checks(pat, 42.0) == {}
     assert checks(pat, 42) == {}
     assert checks(pat, 0.0) is None
@@ -71,7 +71,7 @@ def test_constant_float_pattern() -> None:
 
 def test_alternatives_pattern() -> None:
     # case 1|2|3:
-    pat = AlternativesPattern([ConstantPattern(i) for i in [1, 2, 3]])
+    pat = AlternativesPattern([ValuePattern(i) for i in [1, 2, 3]])
     assert checks(pat, 1) == {}
     assert checks(pat, 2) == {}
     assert checks(pat, 3) == {}
@@ -85,8 +85,8 @@ def test_fancy_alternatives_pattern() -> None:
     # case [1, 2] | [3, 4]:
     pat = AlternativesPattern(
         [
-            SequencePattern([ConstantPattern(1), ConstantPattern(2)]),
-            SequencePattern([ConstantPattern(3), ConstantPattern(4)]),
+            SequencePattern([ValuePattern(1), ValuePattern(2)]),
+            SequencePattern([ValuePattern(3), ValuePattern(4)]),
         ]
     )
     assert checks(pat, [1, 2]) == {}
@@ -146,7 +146,7 @@ def test_mapping_pattern() -> None:
     pat = MappingPattern(
         {
             "x": VariablePattern("x"),
-            "y": ConstantPattern("y"),
+            "y": ValuePattern("y"),
             "z": VariablePattern("z"),
         }
     )
@@ -159,7 +159,7 @@ def test_mapping_pattern() -> None:
 def test_instance_pattern() -> None:
     # case MyClass(xx: int, y='hello'):
     vxx = AnnotatedPattern(VariablePattern("xx"), int)
-    hello = ConstantPattern("hello")
+    hello = ValuePattern("hello")
     pat = InstancePattern(MyClass, [vxx], {"y": hello})
     assert checks(pat, MyClass(42, "hello")) == {"xx": 42}
 
@@ -174,11 +174,11 @@ def test_walrus_pattern() -> None:
 
 
 def test_bindings() -> None:
-    p: Pattern = ConstantPattern(42)
+    p: Pattern = ValuePattern(42)
     assert p.bindings() == p.bindings(False) == set()
 
     p = AlternativesPattern(
-        [ConstantPattern(1), ConstantPattern(2), ConstantPattern(3)]
+        [ValuePattern(1), ValuePattern(2), ValuePattern(3)]
     )
     assert p.bindings() == p.bindings(False) == set()
 
@@ -191,7 +191,7 @@ def test_bindings() -> None:
     p = AlternativesPattern([VariablePattern("a"), VariablePattern("a")])
     assert p.bindings() == p.bindings(False) == {"a"}
 
-    p = AlternativesPattern([VariablePattern("a"), ConstantPattern("a")])
+    p = AlternativesPattern([VariablePattern("a"), ValuePattern("a")])
     assert p.bindings(False) == {"a"}
     with pytest.raises(InconsistentBindings):
         p.bindings()
