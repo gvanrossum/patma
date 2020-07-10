@@ -193,7 +193,7 @@ def test_bindings() -> None:
 
     p = OrPattern([CapturePattern("a"), ValuePattern("a")])
     assert p.bindings(False) == {"a"}
-    with pytest.raises(InconsistentBindings):
+    with pytest.raises(TypeError):
         p.bindings()
 
     p = AnnotatedPattern(CapturePattern("a"), int)
@@ -204,7 +204,7 @@ def test_bindings() -> None:
 
     p = SequencePattern([CapturePattern("a"), CapturePattern("a")])
     assert p.bindings(False) == {"a"}
-    with pytest.raises(DuplicateBindings):
+    with pytest.raises(TypeError):
         p.bindings()
 
     p = MappingPattern({"k": CapturePattern("a"), "l": CapturePattern("b")})
@@ -212,7 +212,7 @@ def test_bindings() -> None:
 
     p = MappingPattern({"k": CapturePattern("a"), "l": CapturePattern("a")})
     assert p.bindings(False) == {"a"}
-    with pytest.raises(DuplicateBindings):
+    with pytest.raises(TypeError):
         p.bindings()
 
     p = ClassPattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("y")})
@@ -220,19 +220,19 @@ def test_bindings() -> None:
 
     p = ClassPattern(MyClass, [CapturePattern("x"), CapturePattern("x")], {})
     assert p.bindings(False) == {"x"}
-    with pytest.raises(DuplicateBindings):
+    with pytest.raises(TypeError):
         p.bindings()
 
     p = ClassPattern(
         MyClass, [], {"x": CapturePattern("x"), "y": CapturePattern("x")}
     )
     assert p.bindings(False) == {"x"}
-    with pytest.raises(DuplicateBindings):
+    with pytest.raises(TypeError):
         p.bindings()
 
     p = ClassPattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("x")})
     assert p.bindings(False) == {"x"}
-    with pytest.raises(DuplicateBindings):
+    with pytest.raises(TypeError):
         p.bindings()
 
     p = WalrusPattern("a", CapturePattern("b"))
@@ -240,5 +240,5 @@ def test_bindings() -> None:
 
     p = WalrusPattern("a", CapturePattern("a"))
     assert p.bindings(False) == {"a"}
-    with pytest.raises(DuplicateBindings):
+    with pytest.raises(TypeError):
         p.bindings()
