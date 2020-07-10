@@ -8,7 +8,7 @@ __all__ = [
     "Pattern",
     "OrPattern",
     "ValuePattern",
-    "VariablePattern",
+    "CapturePattern",
     "AnnotatedPattern",
     "SequencePattern",
     "MappingPattern",
@@ -181,8 +181,8 @@ class OrPattern(Pattern):
         return result
 
 
-class VariablePattern(Pattern):
-    """A value extraction pattern.
+class CapturePattern(Pattern):
+    """A pattern that captures a value into a variable.
 
     This is an 'irrefutable' pattern (meaning that it always matches)
     that produces a new name binding.

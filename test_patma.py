@@ -99,7 +99,7 @@ def test_fancy_alternatives_pattern() -> None:
 
 def test_variable_pattern() -> None:
     # case x:
-    pat = VariablePattern("x")
+    pat = CapturePattern("x")
     assert checks(pat, 42) == {"x": 42}
     assert checks(pat, (1, 2)) == {"x": (1, 2)}
     assert checks(pat, None) == {"x": None}
@@ -107,14 +107,14 @@ def test_variable_pattern() -> None:
 
 def test_annotated_pattern() -> None:
     # case (x: int):
-    pat = AnnotatedPattern(VariablePattern("x"), int)
+    pat = AnnotatedPattern(CapturePattern("x"), int)
     assert checks(pat, 42) == {"x": 42}
     assert checks(pat, "hello") is None
 
 
 def test_int_matches_float() -> None:
     # case (x: float):  # Should match int
-    pat = AnnotatedPattern(VariablePattern("x"), float)
+    pat = AnnotatedPattern(CapturePattern("x"), float)
     match = pat.match(42)
     assert match == {"x": 42}  # TODO: translate should assume int <: float
     assert type(match) == dict  # TODO: translate ditto
@@ -122,13 +122,13 @@ def test_int_matches_float() -> None:
 
 def test_float_doesnt_match_int() -> None:
     # case (x: int):  # Shouldn't match 1.0
-    pat = AnnotatedPattern(VariablePattern("x"), int)
+    pat = AnnotatedPattern(CapturePattern("x"), int)
     assert checks(pat, 1.0) is None
 
 
 def test_sequence_pattern() -> None:
     # case (x, y, z):
-    pat = SequencePattern([VariablePattern(s) for s in "xyz"])
+    pat = SequencePattern([CapturePattern(s) for s in "xyz"])
     assert checks(pat, (1, 2, 3)) == {"x": 1, "y": 2, "z": 3}
     assert checks(pat, (1, 2)) is None
     assert checks(pat, (1, 2, 3, 4)) is None
@@ -145,9 +145,9 @@ def test_mapping_pattern() -> None:
     # case {"x": x, "y": "z": z}:
     pat = MappingPattern(
         {
-            "x": VariablePattern("x"),
+            "x": CapturePattern("x"),
             "y": ValuePattern("y"),
-            "z": VariablePattern("z"),
+            "z": CapturePattern("z"),
         }
     )
     assert checks(pat, {"x": "x", "y": "y", "z": "z"}) == {"x": "x", "z": "z"}
@@ -158,7 +158,7 @@ def test_mapping_pattern() -> None:
 
 def test_instance_pattern() -> None:
     # case MyClass(xx: int, y='hello'):
-    vxx = AnnotatedPattern(VariablePattern("xx"), int)
+    vxx = AnnotatedPattern(CapturePattern("xx"), int)
     hello = ValuePattern("hello")
     pat = InstancePattern(MyClass, [vxx], {"y": hello})
     assert checks(pat, MyClass(42, "hello")) == {"xx": 42}
@@ -166,7 +166,7 @@ def test_instance_pattern() -> None:
 
 def test_walrus_pattern() -> None:
     # case x := (p, q):
-    pat = WalrusPattern("x", SequencePattern([VariablePattern(s) for s in "pq"]))
+    pat = WalrusPattern("x", SequencePattern([CapturePattern(s) for s in "pq"]))
     assert checks(pat, (1, 2)) == {"p": 1, "q": 2, "x": (1, 2)}
     assert checks(pat, [1, 2]) == {"p": 1, "q": 2, "x": [1, 2]}
     assert checks(pat, 12) is None
@@ -182,63 +182,63 @@ def test_bindings() -> None:
     )
     assert p.bindings() == p.bindings(False) == set()
 
-    p = VariablePattern("_")
+    p = CapturePattern("_")
     assert p.bindings() == p.bindings(False) == set()
 
-    p = VariablePattern("abc")
+    p = CapturePattern("abc")
     assert p.bindings() == p.bindings(False) == {"abc"}
 
-    p = OrPattern([VariablePattern("a"), VariablePattern("a")])
+    p = OrPattern([CapturePattern("a"), CapturePattern("a")])
     assert p.bindings() == p.bindings(False) == {"a"}
 
-    p = OrPattern([VariablePattern("a"), ValuePattern("a")])
+    p = OrPattern([CapturePattern("a"), ValuePattern("a")])
     assert p.bindings(False) == {"a"}
     with pytest.raises(InconsistentBindings):
         p.bindings()
 
-    p = AnnotatedPattern(VariablePattern("a"), int)
+    p = AnnotatedPattern(CapturePattern("a"), int)
     assert p.bindings() == p.bindings(False) == {"a"}
 
-    p = SequencePattern([VariablePattern("a"), VariablePattern("b")])
+    p = SequencePattern([CapturePattern("a"), CapturePattern("b")])
     assert p.bindings() == p.bindings(False) == {"a", "b"}
 
-    p = SequencePattern([VariablePattern("a"), VariablePattern("a")])
+    p = SequencePattern([CapturePattern("a"), CapturePattern("a")])
     assert p.bindings(False) == {"a"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = MappingPattern({"k": VariablePattern("a"), "l": VariablePattern("b")})
+    p = MappingPattern({"k": CapturePattern("a"), "l": CapturePattern("b")})
     assert p.bindings() == p.bindings(False) == {"a", "b"}
 
-    p = MappingPattern({"k": VariablePattern("a"), "l": VariablePattern("a")})
+    p = MappingPattern({"k": CapturePattern("a"), "l": CapturePattern("a")})
     assert p.bindings(False) == {"a"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = InstancePattern(MyClass, [VariablePattern("x")], {"y": VariablePattern("y")})
+    p = InstancePattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("y")})
     assert p.bindings() == p.bindings(False) == {"x", "y"}
 
-    p = InstancePattern(MyClass, [VariablePattern("x"), VariablePattern("x")], {})
+    p = InstancePattern(MyClass, [CapturePattern("x"), CapturePattern("x")], {})
     assert p.bindings(False) == {"x"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
     p = InstancePattern(
-        MyClass, [], {"x": VariablePattern("x"), "y": VariablePattern("x")}
+        MyClass, [], {"x": CapturePattern("x"), "y": CapturePattern("x")}
     )
     assert p.bindings(False) == {"x"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = InstancePattern(MyClass, [VariablePattern("x")], {"y": VariablePattern("x")})
+    p = InstancePattern(MyClass, [CapturePattern("x")], {"y": CapturePattern("x")})
     assert p.bindings(False) == {"x"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
 
-    p = WalrusPattern("a", VariablePattern("b"))
+    p = WalrusPattern("a", CapturePattern("b"))
     assert p.bindings() == p.bindings(False) == {"a", "b"}
 
-    p = WalrusPattern("a", VariablePattern("a"))
+    p = WalrusPattern("a", CapturePattern("a"))
     assert p.bindings(False) == {"a"}
     with pytest.raises(DuplicateBindings):
         p.bindings()
