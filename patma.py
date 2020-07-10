@@ -6,14 +6,15 @@ from typing import Dict, List, Mapping, Optional, Set, Type
 
 __all__ = [
     "Pattern",
-    "OrPattern",
-    "ValuePattern",
-    "CapturePattern",
     "AnnotatedPattern",
-    "SequencePattern",
-    "MappingPattern",
+    "CapturePattern",
     "ClassPattern",
+    "MappingPattern",
+    "OrPattern",
+    "SequencePattern",
+    "ValuePattern",
     "WalrusPattern",
+    "WildcardPattern",
 ]
 
 
@@ -21,7 +22,7 @@ class Pattern:
     """A pattern to be matched.
 
     Various subclasses exist for different pattern matching concepts
-    (e.g. sequence unpack, object unpack, value extraction).
+    (e.g. sequence pattern, class pattern, value pattern).
 
     The translation of a match statement produces one Pattern per case.
 
@@ -42,7 +43,7 @@ class Pattern:
             block2
         ...
 
-    However for value extractions there are variable bindings to be
+    However for capturing values there are variable bindings to be
     created.  We leave those up to the compiler; the
     ``Pattern.match()`` method just returns a dict mapping variable
     names to values.
@@ -102,7 +103,15 @@ def _is_instance(x: object, t: type) -> bool:
 class ValuePattern(Pattern):
     """A pattern that matches a given value.
 
-    The matched value's type must be a subtype of the constant's type.
+    NOTE: This covers literal patterns and constant value patterns in PEP 622.
+
+    The target's type must be a subtype of the constant's type.
+
+    NOTE: PEP 622 doesn't have the subtype requirement, and this will print 'A':
+
+        match 42.0:
+            case 42: print('A')
+            case _: print('Z')
     """
 
     def __init__(self, constant: object):
@@ -129,6 +138,8 @@ class OrPattern(Pattern):
     """A pattern consisting of several alternatives.
 
     This is a sequence of patterns separated by bars (``|``).
+
+    The first matching pattern is selected.
     """
 
     def __init__(self, patterns: List[Pattern]):
@@ -165,9 +176,12 @@ class CapturePattern(Pattern):
 
     This is an 'irrefutable' pattern (meaning that it always matches)
     that produces a new name binding.
+
+    NOTE: For '_' use WildcardPattern.
     """
 
     def __init__(self, name: str):
+        assert name != "_"
         self.name = name
 
     def match(self, x: object) -> Dict[str, object]:
@@ -177,10 +191,23 @@ class CapturePattern(Pattern):
         return f"({self.name} := {target},)"
 
     def bindings(self, strict: bool = True) -> Set[str]:
-        if self.name == "_":
-            return set()
-        else:
-            return {self.name}
+        return {self.name}
+
+
+class WildcardPattern(Pattern):
+    """A pattern that always matches and captures nothing."""
+
+    def __init__(self):
+        pass
+
+    def match(self, x: object) -> Dict[str, object]:
+        return {}
+
+    def translate(self, target: str) -> str:
+        return f"True"
+
+    def bindings(self, strict: bool = True) -> Set[str]:
+        return set()
 
 
 def _full_class_name(cls: type) -> str:

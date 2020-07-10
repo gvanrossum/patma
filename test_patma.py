@@ -51,7 +51,7 @@ class MyClass:
     __match_args__ = ("x", "y")
 
 
-def test_constant_pattern() -> None:
+def test_value_pattern() -> None:
     # case 42:
     pat = ValuePattern(42)
     assert checks(pat, 42) == {}
@@ -60,7 +60,7 @@ def test_constant_pattern() -> None:
     assert checks(pat, "42") is None
 
 
-def test_constant_float_pattern() -> None:
+def test_float_value_pattern() -> None:
     # case 42.0:
     pat = ValuePattern(42.0)
     assert checks(pat, 42.0) == {}
@@ -69,7 +69,7 @@ def test_constant_float_pattern() -> None:
     assert checks(pat, 0) is None
 
 
-def test_alternatives_pattern() -> None:
+def test_or_pattern() -> None:
     # case 1|2|3:
     pat = OrPattern([ValuePattern(i) for i in [1, 2, 3]])
     assert checks(pat, 1) == {}
@@ -81,7 +81,7 @@ def test_alternatives_pattern() -> None:
     assert checks(pat, "1") is None
 
 
-def test_fancy_alternatives_pattern() -> None:
+def test_fancy_or_pattern() -> None:
     # case [1, 2] | [3, 4]:
     pat = OrPattern(
         [
@@ -97,12 +97,20 @@ def test_fancy_alternatives_pattern() -> None:
     assert checks(pat, [1, 2.0]) is None
 
 
-def test_variable_pattern() -> None:
+def test_capture_pattern() -> None:
     # case x:
     pat = CapturePattern("x")
     assert checks(pat, 42) == {"x": 42}
     assert checks(pat, (1, 2)) == {"x": (1, 2)}
     assert checks(pat, None) == {"x": None}
+
+
+def test_wildcard_pattern() -> None:
+    # case _:
+    pat = WildcardPattern()
+    assert checks(pat, 42) == {}
+    assert checks(pat, None) == {}
+    assert checks(pat, (1, 2)) == {}
 
 
 def test_annotated_pattern() -> None:
@@ -156,7 +164,7 @@ def test_mapping_pattern() -> None:
     assert checks(pat, {"x": "x", "y": "y"}) is None
 
 
-def test_instance_pattern() -> None:
+def test_class_pattern() -> None:
     # case MyClass(xx: int, y='hello'):
     vxx = AnnotatedPattern(CapturePattern("xx"), int)
     hello = ValuePattern("hello")
@@ -182,7 +190,7 @@ def test_bindings() -> None:
     )
     assert p.bindings() == p.bindings(False) == set()
 
-    p = CapturePattern("_")
+    p = WildcardPattern()
     assert p.bindings() == p.bindings(False) == set()
 
     p = CapturePattern("abc")
