@@ -113,27 +113,6 @@ def test_wildcard_pattern() -> None:
     assert checks(pat, (1, 2)) == {}
 
 
-def test_annotated_pattern() -> None:
-    # case (x: int):
-    pat = AnnotatedPattern(CapturePattern("x"), int)
-    assert checks(pat, 42) == {"x": 42}
-    assert checks(pat, "hello") is None
-
-
-def test_int_matches_float() -> None:
-    # case (x: float):  # Should match int
-    pat = AnnotatedPattern(CapturePattern("x"), float)
-    match = pat.match(42)
-    assert match == {"x": 42}  # TODO: translate should assume int <: float
-    assert type(match) == dict  # TODO: translate ditto
-
-
-def test_float_doesnt_match_int() -> None:
-    # case (x: int):  # Shouldn't match 1.0
-    pat = AnnotatedPattern(CapturePattern("x"), int)
-    assert checks(pat, 1.0) is None
-
-
 def test_sequence_pattern() -> None:
     # case (x, y, z):
     pat = SequencePattern([CapturePattern(s) for s in "xyz"])
@@ -166,7 +145,7 @@ def test_mapping_pattern() -> None:
 
 def test_class_pattern() -> None:
     # case MyClass(xx: int, y='hello'):
-    vxx = AnnotatedPattern(CapturePattern("xx"), int)
+    vxx = CapturePattern("xx")
     hello = ValuePattern("hello")
     pat = ClassPattern(MyClass, [vxx], {"y": hello})
     assert checks(pat, MyClass(42, "hello")) == {"xx": 42}
@@ -203,9 +182,6 @@ def test_bindings() -> None:
     assert p.bindings(False) == {"a"}
     with pytest.raises(TypeError):
         p.bindings()
-
-    p = AnnotatedPattern(CapturePattern("a"), int)
-    assert p.bindings() == p.bindings(False) == {"a"}
 
     p = SequencePattern([CapturePattern("a"), CapturePattern("b")])
     assert p.bindings() == p.bindings(False) == {"a", "b"}

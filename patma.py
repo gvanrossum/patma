@@ -1,3 +1,5 @@
+# TODO: Use proper equivalency for ValuePattern
+
 import collections.abc as cabc
 import dataclasses
 import itertools
@@ -6,7 +8,6 @@ from typing import Dict, List, Mapping, Optional, Set, Type
 
 __all__ = [
     "Pattern",
-    "AnnotatedPattern",
     "CapturePattern",
     "ClassPattern",
     "MappingPattern",
@@ -216,36 +217,6 @@ def _full_class_name(cls: type) -> str:
         return cls.__qualname__
     else:
         return f"{cls.__module__}.{cls.__qualname__}"
-
-
-class AnnotatedPattern(Pattern):
-    """A pattern involving a type annotation.
-
-    NOTE: This is not in PEP 622.
-
-    For example, ``(x: int)``.
-
-    TODO: This requires instantiating the Pattern object
-          each time a match statement is executed.
-          We should instead somehow pass the name lookup
-          context to the match() call.
-    """
-
-    def __init__(self, pattern: Pattern, cls: Type):
-        self.pattern = pattern
-        self.cls = cls
-
-    def match(self, x: object) -> Optional[Dict[str, object]]:
-        if _is_instance(x, self.cls):
-            return self.pattern.match(x)
-        return None
-
-    def translate(self, target: str) -> str:
-        # TODO: numeric tower
-        return f"(isinstance({target}, {_full_class_name(self.cls)}) and {self.pattern.translate(target)})"
-
-    def bindings(self, strict: bool = True) -> Set[str]:
-        return self.pattern.bindings(strict)
 
 
 class SequencePattern(Pattern):
