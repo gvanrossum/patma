@@ -58,13 +58,6 @@ class Pattern:
     where ``x`` has the value ``(4, 2)``, the ``pattern.match(x)``
     call returns ``{'a': 4, 'b': 2}``.  If a pattern extracts no
     values it returns ``{}``.
-
-    Note that, while any ``Pattern`` can be nested inside any other
-    ``Pattern`` (provided it can contain nested patterns at all), the
-    syntax may restrict nesting.  For example, a type annotation
-    pattern (e.g. ``a: int``) uses a ``Pattern`` to represent the
-    variable, but the syntax constrains what appears to the left of
-    the colon and where the ``a: int`` pattern can occur.
     """
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
@@ -105,30 +98,17 @@ class ValuePattern(Pattern):
     """A pattern that matches a given value.
 
     NOTE: This covers literal patterns and constant value patterns in PEP 622.
-
-    The target's type must be a subtype of the constant's type.
-
-    NOTE: PEP 622 doesn't have the subtype requirement, and this will print 'A':
-
-        match 42.0:
-            case 42: print('A')
-            case _: print('Z')
     """
 
     def __init__(self, constant: object):
         self.constant = constant
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
-        if _is_instance(x, type(self.constant)) and x == self.constant:
+        if x == self.constant:
             return {}
         return None
 
     def translate(self, target: str) -> str:
-        if isinstance(self.constant, int):
-            return f"({target} == {self.constant!r} and isinstance({target}, int))"
-        if isinstance(self.constant, float):
-            return f"({target} == {self.constant!r} and isinstance({target}, (int, float)))"
-        # TODO: complex
         return f"({target} == {self.constant!r})"
 
     def bindings(self, strict: bool = True) -> Set[str]:

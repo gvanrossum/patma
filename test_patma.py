@@ -56,7 +56,7 @@ def test_value_pattern() -> None:
     pat = ValuePattern(42)
     assert checks(pat, 42) == {}
     assert checks(pat, 0) is None
-    assert checks(pat, 42.0) is None
+    assert checks(pat, 42.0) == {}
     assert checks(pat, "42") is None
 
 
@@ -75,7 +75,7 @@ def test_or_pattern() -> None:
     assert checks(pat, 1) == {}
     assert checks(pat, 2) == {}
     assert checks(pat, 3) == {}
-    assert checks(pat, 3.0) is None
+    assert checks(pat, 3.0) == {}
     assert checks(pat, 0) is None
     assert checks(pat, 4) is None
     assert checks(pat, "1") is None
@@ -94,7 +94,7 @@ def test_fancy_or_pattern() -> None:
     assert checks(pat, 42) is None
     assert checks(pat, [2, 3]) is None
     assert checks(pat, [1, 2, 3]) is None
-    assert checks(pat, [1, 2.0]) is None
+    assert checks(pat, [1, 2.0]) == {}
 
 
 def test_capture_pattern() -> None:
