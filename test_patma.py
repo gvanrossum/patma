@@ -42,13 +42,8 @@ class MyClass:
     x: int
     y: str
 
-    @staticmethod
-    def __match__(target: object) -> object:
-        if not isinstance(target, MyClass):
-            return None
-        return target
-
-    __match_args__ = ("x", "y")
+    # NOTE: in 3.10 dataclasses will have this by default
+    __match_args__ = ["x", "y"]
 
 
 def test_value_pattern() -> None:

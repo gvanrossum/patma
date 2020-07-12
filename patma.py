@@ -1,7 +1,6 @@
 # TODO: Use proper equivalency for ValuePattern
 
 import collections.abc as cabc
-import dataclasses
 import itertools
 import sys
 from typing import Dict, List, Mapping, Optional, Set, Type
@@ -169,7 +168,7 @@ class CapturePattern(Pattern):
         return {self.name: x}
 
     def translate(self, target: str) -> str:
-        return f"({self.name} := {target},)"
+        return f"({self.name} := {target},)"  # Always true, sets self.name.
 
     def bindings(self, strict: bool = True) -> Set[str]:
         return {self.name}
@@ -178,7 +177,7 @@ class CapturePattern(Pattern):
 class WildcardPattern(Pattern):
     """A pattern that always matches and captures nothing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def match(self, x: object) -> Dict[str, object]:
@@ -303,8 +302,6 @@ class ClassPattern(Pattern):
 
     For example, ``MyClass(x, flag=y)``.  This extracts variables
     ``x`` and ``y``.
-
-    TODO: Same problem for the class name as AnnotatedPattern.
     """
 
     def __init__(
@@ -318,19 +315,16 @@ class ClassPattern(Pattern):
         if not _is_instance(x, self.cls):
             return None
 
-        try:
-            fields = dataclasses.fields(x)
-        except RuntimeError:
-            fields = ()
+        fields = getattr(self.cls, "__match_args__", ())
 
         if len(self.posargs) > len(fields):
-            return None  # Can't match: more positional patterns than fields.
+            raise TypeError("more positional sub-patterns than fields")
 
         missing = object()
         matches = {}
 
         for field, pattern in zip(fields, self.posargs):
-            value = getattr(x, field.name, missing)
+            value = getattr(x, field, missing)
             if value is missing:
                 return None  # Can't match: attribute not set.
             match = pattern.match(value)
@@ -350,21 +344,27 @@ class ClassPattern(Pattern):
         return matches
 
     def translate(self, target: str) -> str:
+        # TODO: arrange to import Sequence and _Nope
         depth = _get_stack_depth()
+        daclass = f"_c{depth}"
         tmpvar = f"_t{depth}"
         fields = f"_f{depth}"
         item = f"_i{depth}"
         conditions = []
-        conditions.append(
-            f"({tmpvar} := {_full_class_name(self.cls)}.__match__({target})) is not None"
-        )
+        conditions.append(f"({tmpvar} := {target},)")
+        conditions.append(f"({daclass} := {_full_class_name(self.cls)},)")
+        conditions.append(f"isinstance({tmpvar}, {daclass})")
         npos = len(self.posargs)
         if npos > 0:
+            # TODO: Extract fields from self.cls.__match_args__ in __init__()
             conditions.append(
-                f"({fields} := getattr({tmpvar}, '__match_args__', None)) is not None"
+                f"({fields} := getattr({daclass}, '__match_args__', ()))"
             )
-            conditions.append(f"isinstance({fields}, Sequence)")
+
+            # TODO: These two conditions should raise TypeError
+            conditions.append(f"isinstance({fields}, (list, tuple))")
             conditions.append(f"len({fields}) >= {npos}")
+
             for i in range(npos):
                 conditions.append(
                     f"({item} := getattr({tmpvar}, {fields}[{i}], _Nope)) is not _Nope"
