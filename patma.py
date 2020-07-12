@@ -310,20 +310,23 @@ class ClassPattern(Pattern):
         self.cls = cls
         self.posargs = posargs
         self.kwargs = kwargs
+        self.fields = getattr(self.cls, "__match_args__", ())
+        if not isinstance(self.fields, (list, tuple)):
+            raise TypeError("__match_args__ should be a list or tuple")
+        if len(self.posargs) > len(self.fields):
+            raise TypeError("more positional args than __match_args__ supports")
+        for i, field in enumerate(self.fields[:len(self.posargs)]):
+            if field in self.kwargs:
+                raise TypeError(f"posargs[{i}] conflicts with kwargs[{field!r}]")
 
     def match(self, x: object) -> Optional[Dict[str, object]]:
         if not _is_instance(x, self.cls):
             return None
 
-        fields = getattr(self.cls, "__match_args__", ())
-
-        if len(self.posargs) > len(fields):
-            raise TypeError("more positional sub-patterns than fields")
-
         missing = object()
         matches = {}
 
-        for field, pattern in zip(fields, self.posargs):
+        for field, pattern in zip(self.fields, self.posargs):
             value = getattr(x, field, missing)
             if value is missing:
                 return None  # Can't match: attribute not set.
@@ -348,7 +351,6 @@ class ClassPattern(Pattern):
         depth = _get_stack_depth()
         daclass = f"_c{depth}"
         tmpvar = f"_t{depth}"
-        fields = f"_f{depth}"
         item = f"_i{depth}"
         conditions = []
         conditions.append(f"({tmpvar} := {target},)")
@@ -356,20 +358,11 @@ class ClassPattern(Pattern):
         conditions.append(f"isinstance({tmpvar}, {daclass})")
         npos = len(self.posargs)
         if npos > 0:
-            # TODO: Extract fields from self.cls.__match_args__ in __init__()
-            conditions.append(
-                f"({fields} := getattr({daclass}, '__match_args__', ()))"
-            )
-
-            # TODO: These two conditions should raise TypeError
-            conditions.append(f"isinstance({fields}, (list, tuple))")
-            conditions.append(f"len({fields}) >= {npos}")
-
-            for i in range(npos):
+            for pat, field in zip(self.posargs, self.fields, strict=False):
                 conditions.append(
-                    f"({item} := getattr({tmpvar}, {fields}[{i}], _Nope)) is not _Nope"
+                    f"({item} := getattr({tmpvar}, {field!r}, _Nope)) is not _Nope"
                 )
-                conditions.append(self.posargs[i].translate(item))
+                conditions.append(pat.translate(item))
         for kw, pat in self.kwargs.items():
             conditions.append(
                 f"({item} := getattr({tmpvar}, {kw!r}, _Nope)) is not _Nope"
