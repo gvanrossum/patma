@@ -88,11 +88,11 @@ match point:
     case (0, 0):
         print("Origin")
     case (0, y):
-        print(f"Y={y}")
+        print(f"{y=}")
     case (x, 0):
-        print(f"X={x}")
+        print(f"{x=}")
     case (x, y):
-        print(f"X={x}, Y={y}")
+        print(f"{x=}, {y=}")
     case _:
         raise ValueError("Not a point")
 ```
@@ -121,9 +121,9 @@ def whereis(point):
         case Point(0, 0):
             print("Origin")
         case Point(0, y):
-            print(f"Y={y}")
+            print(f"{y=}")
         case Point(x, 0):
-            print(f"X={x}")
+            print(f"{x=}")
         case Point():
             print("Somewhere else")
         case _:
