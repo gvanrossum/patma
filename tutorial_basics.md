@@ -292,7 +292,7 @@ def is_ordered(seq):
             return True, "ascending"
         case [x]:
             return True, "ascending"
-        case [x, y] if x <= x:       # Third case
+        case [x, y] if x <= y:       # Third case
             return True, "ascending"
         case [x, y]:                 # Fourth case
             return True, "descending"
@@ -357,7 +357,7 @@ def is_ordered(seq):
             return True, "ascending"
         case [x]:
             return True, "ascending"
-        case [x, y] if x <= x:
+        case [x, y] if x <= y:
             return True, "ascending"
         case [x, y]:
             return True, "descending"
