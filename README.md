@@ -212,6 +212,19 @@ Several other key features:
           print("I'm feeling the blues :(")
   ```
 
+- The literals `None`, `False` and `True` are treated specially:
+  comparisons to the subject are done using `is`.  This:
+  ```py
+  match b:
+      case True:
+          print("Yes!")
+  ```
+  is exactly quivalent to this:
+  ```py
+  if b is True:
+      print("Yes!")
+  ```
+
 - Classes may override the mapping from positional arguments to
   attributes by setting a class variable `__match_args__`.
   Read about it in the
