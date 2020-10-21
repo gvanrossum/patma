@@ -187,10 +187,10 @@ Several other key features:
   patterns, extra keys are ignored.  A wildcard `**rest` is also
   supported.  (But `**_` would be redundant, so it not allowed.)
 
-- Subpatterns may be captured using the walrus (`:=`) operator:
+- Subpatterns may be captured using the `as` operator:
 
   ```py
-  case (Point(x1, y1), p2 := Point(x2, y2)): ...
+  case (Point(x1, y1), Point(x2, y2) as p2): ...
   ```
 
 - Patterns may use named constants.  These must be dotted names
