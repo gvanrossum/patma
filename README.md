@@ -47,7 +47,7 @@ Tutorial
 
 A `match` statement takes an expression and compares it to successive
 patterns given as one or more `case` blocks.  This is superficially
-similar to a `switch` statement in C, Java or JavaScript (an many
+similar to a `switch` statement in C, Java or JavaScript (and many
 other languages), but much more powerful.
 
 The simplest form compares a subject value against one or more literals:
