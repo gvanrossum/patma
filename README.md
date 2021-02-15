@@ -219,7 +219,7 @@ Several other key features:
       case True:
           print("Yes!")
   ```
-  is exactly quivalent to this:
+  is exactly equivalent to this:
   ```py
   if b is True:
       print("Yes!")
