@@ -105,7 +105,7 @@ match point:
         raise ValueError("Not a point")
 ```
 
-Study that one carefully!  The first pattern has two literals, and can
+Study that one carefully!  The first pattern has two literals and can
 be thought of as an extension of the literal pattern shown above.  But
 the next two patterns combine a literal and a variable, and the
 variable *captures* a value from the subject (`point`).  The fourth
@@ -179,21 +179,11 @@ match point:
 
 Several other key features:
 
-- Like unpacking assignments, tuple and list patterns have exactly the
-  same meaning and actually match arbitrary sequences.  An important
-  exception is that they don't match iterators or strings.
-  (Technically, the subject  must be an instance of
-  `collections.abc.Sequence`.)
+-  Like unpacking assignments, tuple and list patterns have the same meaning and actually match arbitrary sequences.  An important exception is that they don't match iterators or strings.(Technically, the subject  must be an instance of collections.abc.Sequence`.)
 
-- Sequence patterns support wildcards: `[x, y, *rest]` and `(x, y,
-  *rest)` work similar to wildcards in unpacking assignments.  The
-  name after `*` may also be `_`, so `(x, y, *_)` matches a sequence
-  of at least two items without binding the remaining items.
+- Sequence patterns support wildcards: `[x, y, *rest]` and `(x, y, *rest)` work similar to wildcards in unpacking assignments.  The name after `*` may also be `_`, so `(x, y, *_)` matches a sequence of at least two items without binding the remaining items.
 
-- Mapping patterns: `{"bandwidth": b, "latency": l}` captures the
-  `"bandwidth"` and `"latency"` values from a dict.  Unlike sequence
-  patterns, extra keys are ignored.  A wildcard `**rest` is also
-  supported.  (But `**_` would be redundant, so it is not allowed.)
+- Mapping patterns: `{"bandwidth": b, "latency": l}` captures the `"bandwidth"` and `"latency"` values from a dict.  Unlike sequence patterns, extra keys are ignored.  A wildcard `**rest` is also supported.  (But `**_` would be redundant, so it is not allowed.)
 
 - Subpatterns may be captured using the `as` operator:
 
