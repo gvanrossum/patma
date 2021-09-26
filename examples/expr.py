@@ -50,7 +50,7 @@ class TokenStream:
 # Note definition of __match_args__ to support sequence destructuring.
 class BinaryOp:
     """A binary operator expression."""
-    __match_args__ = ["op", "left", "right"]
+    __match_args__ = ("op", "left", "right")
 
     PRECEDENCE = {
         '+': 3,
