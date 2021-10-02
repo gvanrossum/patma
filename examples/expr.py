@@ -127,11 +127,11 @@ def parse_binop(tokstream: TokenStream):
     # Simple operator precedence parser
     while tokstream.token_type != tokenize.ENDMARKER:
         match tokstream.token:
-            case [tokenize.OP, ("*" | "/") as value]:
+            case [tokenize.OP, value := "*"|"/"]:
                 reduce(4)
                 tokstream.next()
                 opstack.append(OpStackEntry(value, 4))
-            case [tokenize.OP, ("+" | "-") as value]:
+            case [tokenize.OP, value := "+"|"-"]:
                 reduce(3)
                 tokstream.next()
                 opstack.append(OpStackEntry(value, 3))
@@ -153,7 +153,7 @@ def parse_binop(tokstream: TokenStream):
 def parse_unop(tokstream: TokenStream):
     """Parse unary operator."""
     match tokstream.token:
-        case [tokenize.OP, ("+" | "-") as value]:
+        case [tokenize.OP, value := "+"|"-"]:
             tokstream.next()
             arg = parse_unop(tokstream)
             if arg is None:
