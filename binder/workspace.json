@@ -23,7 +23,7 @@
           "command-palette",
           "jp-property-inspector",
           "tab-manager",
-          "jupuyerlab-toc",
+          "jupyterlab-toc",
           "extensionmanager.main-view"
         ]
       },
