@@ -154,11 +154,11 @@ def create_rectangle(**kwargs):
 ```
 Once we are this far, there is naturally nothing stopping you from combining both possibilities:
 ```python
-def create_rectangle(*args, **kwards):
+def create_rectangle(*args, **kwargs):
     match (args, kwargs):
-        case ((x, y), { 'width': width, 'height': height }:
+        case ((x, y), { 'width': width, 'height': height }):
             pass
-        case ((x, y), { 'right': right, 'bottom': bottom }:
+        case ((x, y), { 'right': right, 'bottom': bottom }):
             width = right - x
             height = bottom - y
         case ((), { 'x': x, 'y': y, 'width': width, 'height': height }):
